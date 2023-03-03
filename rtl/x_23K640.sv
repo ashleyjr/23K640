@@ -57,6 +57,15 @@ module x_23K640(
    localparam READ_WARM_20 = 38;
    localparam READ_WARM_21 = 39;
    localparam READ_WARM_22 = 40;
+   localparam READ_WARM_23 = 40;
+   localparam READ_WARM_24 = 40;
+   localparam READ_WARM_25 = 40;
+   localparam READ_WARM_26 = 40;
+   localparam READ_WARM_27 = 40;
+   localparam READ_WARM_28 = 40;
+   localparam READ_WARM_29 = 40;
+   localparam READ_WARM_30 = 40;
+   localparam READ_WARM_31 = 40;
    localparam WRITE_WARM_0  = 18;
    localparam WRITE_WARM_1  = 19;
    localparam WRITE_WARM_2  = 20;
@@ -80,6 +89,15 @@ module x_23K640(
    localparam WRITE_WARM_20 = 38;
    localparam WRITE_WARM_21 = 39;
    localparam WRITE_WARM_22 = 40;
+   localparam WRITE_WARM_23 = 33;
+   localparam WRITE_WARM_24 = 34;
+   localparam WRITE_WARM_25 = 35;
+   localparam WRITE_WARM_26 = 36;
+   localparam WRITE_WARM_27 = 37;
+   localparam WRITE_WARM_28 = 38;
+   localparam WRITE_WARM_29 = 39;
+   localparam WRITE_WARM_30 = 40;
+   localparam WRITE_WARM_31 = 40;
 
    logic        sm_en;
    logic [41:0] sm_d;
@@ -103,7 +121,7 @@ module x_23K640(
    assign sm_en = o_sck & div_en; 
 
    always_ff@(posedge i_clk or posedge i_rst) begin
-      if(i_rst)      sm_q <= 'd0;
+      if(i_rst)      sm_q <= 'd1;
       else if(sm_en) sm_q <= sm_d;
    end
 
@@ -116,19 +134,90 @@ module x_23K640(
    always_comb begin
       sm_d = 'd0;
       case(1'b1) 
+         sm_q[IDLE_COLD]:
+            begin
+               sm_d[IDLE_COLD] = ~i_en;
+               sm_d[CONFIG_0]  =  i_en;
+            end
          sm_q[IDLE_WARM]: 
             begin
                sm_d[IDLE_WARM]    = ~i_en;
                sm_d[READ_WARM_0]  =  i_en &  i_rd_n_wr;
                sm_d[WRITE_WARM_0] =  i_en & ~i_rd_n_wr;
             end
+         sm_q[READ_WARM_31]: 
+            begin
+               sm_d[IDLE_WARM] = 1'b1;
+            end
+         sm_q[WRITE_WARM_31]: 
+            begin
+               sm_d[IDLE_WARM] = 1'b1;
+            end
          default: 
             sm_d = sm_q << 1;
       endcase
    end
 
-   assign o_cs = sm_q[IDLE_COLD] | sm_q[IDLE_WARM];
-      
+   // App Output: Ready
+   assign o_ready = sm_q[WRITE_WARM_31];
+
+   // SPI Output: Chip Select
+   assign o_cs = sm_q[IDLE_COLD]| 
+                 sm_q[IDLE_WARM];
+   
+   // SPI Output: Serial Out
+   always_comb begin
+      o_so = 1'b0;
+      case(1'b1)
+         sm_q[CONFIG_7],
+         sm_q[CONFIG_9],
+         sm_q[CONFIG_15],
+         sm_q[READ_WARM_6],
+         sm_q[WRITE_WARM_6],
+         sm_q[WRITE_WARM_7]:     o_so = 1'b1;
+         sm_q[READ_WARM_8],
+         sm_q[WRITE_WARM_8]:     o_so = i_addr[15];
+         sm_q[READ_WARM_9],
+         sm_q[WRITE_WARM_9]:     o_so = i_addr[14];
+         sm_q[READ_WARM_10],
+         sm_q[WRITE_WARM_10]:    o_so = i_addr[13];
+         sm_q[READ_WARM_11],
+         sm_q[WRITE_WARM_11]:    o_so = i_addr[12];
+         sm_q[READ_WARM_12],
+         sm_q[WRITE_WARM_12]:    o_so = i_addr[11];
+         sm_q[READ_WARM_13],
+         sm_q[WRITE_WARM_13]:    o_so = i_addr[10];
+         sm_q[READ_WARM_14],
+         sm_q[WRITE_WARM_14]:    o_so = i_addr[9];
+         sm_q[READ_WARM_15],
+         sm_q[WRITE_WARM_15]:    o_so = i_addr[8];
+         sm_q[READ_WARM_16],
+         sm_q[WRITE_WARM_16]:    o_so = i_addr[7];
+         sm_q[READ_WARM_17],
+         sm_q[WRITE_WARM_17]:    o_so = i_addr[6];
+         sm_q[READ_WARM_18],
+         sm_q[WRITE_WARM_18]:    o_so = i_addr[5];
+         sm_q[READ_WARM_19],
+         sm_q[WRITE_WARM_19]:    o_so = i_addr[4];
+         sm_q[READ_WARM_20],
+         sm_q[WRITE_WARM_20]:    o_so = i_addr[3];
+         sm_q[READ_WARM_21],
+         sm_q[WRITE_WARM_21]:    o_so = i_addr[2];
+         sm_q[READ_WARM_22],
+         sm_q[WRITE_WARM_22]:    o_so = i_addr[1];
+         sm_q[READ_WARM_23],
+         sm_q[WRITE_WARM_23]:    o_so = i_addr[0];
+         sm_q[WRITE_WARM_24]:    o_so = i_data[7]; 
+         sm_q[WRITE_WARM_25]:    o_so = i_data[6]; 
+         sm_q[WRITE_WARM_26]:    o_so = i_data[5]; 
+         sm_q[WRITE_WARM_27]:    o_so = i_data[4]; 
+         sm_q[WRITE_WARM_28]:    o_so = i_data[3]; 
+         sm_q[WRITE_WARM_29]:    o_so = i_data[2]; 
+         sm_q[WRITE_WARM_30]:    o_so = i_data[1]; 
+         sm_q[WRITE_WARM_31]:    o_so = i_data[0]; 
+      endcase
+   end
+
 
 
 endmodule
