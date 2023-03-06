@@ -1,8 +1,8 @@
 module x_23K640(
    input    logic          i_clk,
    input    logic          i_rst,
-   // Application side - Configuration 
-   input    logic [7:0]    i_div,
+   // Master Control 
+   input    logic          i_advance,
    // Application side - Mission Mode
    input    logic          i_en,
    input    logic          i_rd_n_wr,
@@ -103,22 +103,8 @@ module x_23K640(
    logic [41:0] sm_d;
    logic [41:0] sm_q;
 
-   logic        div_en;
-   logic [7:0]  div_d;
-   logic [7:0]  div_q;
-
-   // Divider 
-   assign div_en = (div_q == i_div);
-   
-   assign div_d = (div_en) ? 'd0 : (div_q + 'd1);
-
-   always_ff@(posedge i_clk or posedge i_rst) begin
-      if(i_rst)   div_q <= 'd0;
-      else        div_q <= div_d;
-   end   
- 
    // Advance state machine on falling edge
-   assign sm_en = o_sck & div_en; 
+   assign sm_en = o_sck & i_advance; 
 
    always_ff@(posedge i_clk or posedge i_rst) begin
       if(i_rst)      sm_q <= 'd1;
@@ -127,8 +113,8 @@ module x_23K640(
 
    // Ouput the clock
    always_ff@(posedge i_clk or posedge i_rst) begin
-      if(i_rst)         o_sck <= 'd0;
-      else if(div_en)   o_sck <= ~o_sck;
+      if(i_rst)            o_sck <= 'd0;
+      else if(i_advance)   o_sck <= ~o_sck;
    end   
  
    always_comb begin
