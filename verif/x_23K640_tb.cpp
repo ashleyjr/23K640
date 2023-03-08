@@ -52,7 +52,32 @@ enum class MemState {
    READ_20,
    READ_21,
    READ_22,
-   READ_23
+   READ_23,
+   WRITE_0,
+   WRITE_1,
+   WRITE_2,
+   WRITE_3,
+   WRITE_4,
+   WRITE_5,
+   WRITE_6,
+   WRITE_7,
+   WRITE_8,
+   WRITE_9, 
+   WRITE_10,
+   WRITE_11,
+   WRITE_12,
+   WRITE_13,
+   WRITE_14,
+   WRITE_15,
+   WRITE_16,
+   WRITE_17,
+   WRITE_18,
+   WRITE_19,
+   WRITE_20,
+   WRITE_21,
+   WRITE_22,
+   WRITE_23
+
 };
 
 class Mem {
@@ -62,6 +87,10 @@ class Mem {
          debug = d;
          state = MemState::IDLE;
          cmd_data = 0;
+         so = 0;
+         for(int i=0;i<65536;i++){
+            mem[i] = 0xAA;   
+         }
       }
      
       void set_sck(int v){
@@ -79,19 +108,20 @@ class Mem {
          si = v;  
       }
 
-      int get_so() {  
+      uint8_t get_so() {  
          return so; 
       }
 
    private:
-      bool debug;
+      bool     debug;
       MemState state;
-      int cs;
-      int si;
-      int so;
-      int addr;
-      int cmd_data;
-      int sck_last;
+      uint8_t  cs;
+      uint8_t  si;
+      uint8_t  so;
+      uint16_t addr;
+      uint8_t  cmd_data;
+      uint8_t  sck_last;
+      uint8_t  mem[65536];
 
       void advance() {  
         if(cs == 0){
@@ -130,7 +160,7 @@ class Mem {
                                           switch(cmd_data){
                                              case 3:  state = MemState::READ_0;
                                                       break;
-                                             case 2:  state = MemState::IDLE;
+                                             case 2:  state = MemState::WRITE_0;
                                                       break;
                                              case 5:  state = MemState::IDLE;
                                                       break;
@@ -241,41 +271,133 @@ class Mem {
                                           break;
                case MemState::READ_15:    addr <<= 1;
                                           addr |= si;
+                                          cmd_data = mem[addr];
                                           state = MemState::READ_16;
-                                          printf("READ:\t0x%x\n", addr);
+                                          printf("READ:\tmem[0x%x] -> %x\n", addr, cmd_data);
                                           break;
-               case MemState::READ_16:    addr <<= 1;
-                                          addr |= si;
+               case MemState::READ_16:    so = 1 & (cmd_data >> 7);
                                           state = MemState::READ_17;
                                           break;
-               case MemState::READ_17:    addr <<= 1;
-                                          addr |= si;
+               case MemState::READ_17:    so = 1 & (cmd_data >> 6);
                                           state = MemState::READ_18;
                                           break;
-               case MemState::READ_18:    addr <<= 1;
-                                          addr |= si;
+               case MemState::READ_18:    so = 1 & (cmd_data >> 5);
                                           state = MemState::READ_19;
                                           break;
-               case MemState::READ_19:    addr <<= 1;
-                                          addr |= si;
+               case MemState::READ_19:    so = 1 & (cmd_data >> 4);
                                           state = MemState::READ_20;
                                           break;
-               case MemState::READ_20:    addr <<= 1;
-                                          addr |= si;
+               case MemState::READ_20:    so = 1 & (cmd_data >> 3);
                                           state = MemState::READ_21;
                                           break;
-               case MemState::READ_21:    addr <<= 1;
-                                          addr |= si;
+               case MemState::READ_21:    so = 1 & (cmd_data >> 2);
                                           state = MemState::READ_22;
                                           break;
-               case MemState::READ_22:    addr <<= 1;
-                                          addr |= si;
+               case MemState::READ_22:    so = 1 & (cmd_data >> 1);
                                           state = MemState::READ_23;
                                           break;
-               case MemState::READ_23:    addr <<= 1;
-                                          addr |= si;
+               case MemState::READ_23:    so = cmd_data & 1;
                                           state = MemState::IDLE;
                                           break;
+               case MemState::WRITE_0:    addr <<= 1;
+                                          addr |= si;
+                                          state = MemState::WRITE_1;
+                                          break;
+               case MemState::WRITE_1:    addr <<= 1;
+                                          addr |= si;
+                                          state = MemState::WRITE_2;
+                                          break;
+               case MemState::WRITE_2:    addr <<= 1;
+                                          addr |= si;
+                                          state = MemState::WRITE_3;
+                                          break;
+               case MemState::WRITE_3:    addr <<= 1;
+                                          addr |= si;
+                                          state = MemState::WRITE_4;
+                                          break;
+               case MemState::WRITE_4:    addr <<= 1;
+                                          addr |= si;
+                                          state = MemState::WRITE_5;
+                                          break;
+               case MemState::WRITE_5:    addr <<= 1;
+                                          addr |= si;
+                                          state = MemState::WRITE_6;
+                                          break;
+               case MemState::WRITE_6:    addr <<= 1;
+                                          addr |= si;
+                                          state = MemState::WRITE_7;
+                                          break;
+               case MemState::WRITE_7:    addr <<= 1;
+                                          addr |= si;
+                                          state = MemState::WRITE_8;
+                                          break;
+               case MemState::WRITE_8:    addr <<= 1;
+                                          addr |= si;
+                                          state = MemState::WRITE_9;
+                                          break;
+               case MemState::WRITE_9:    addr <<= 1;
+                                          addr |= si;
+                                          state = MemState::WRITE_10;
+                                          break;
+               case MemState::WRITE_10:   addr <<= 1;
+                                          addr |= si;
+                                          state = MemState::WRITE_11;
+                                          break;
+               case MemState::WRITE_11:   addr <<= 1;
+                                          addr |= si;
+                                          state = MemState::WRITE_12;
+                                          break;
+               case MemState::WRITE_12:   addr <<= 1;
+                                          addr |= si;
+                                          state = MemState::WRITE_13;
+                                          break;
+               case MemState::WRITE_13:   addr <<= 1;
+                                          addr |= si;
+                                          state = MemState::WRITE_14;
+                                          break;
+               case MemState::WRITE_14:   addr <<= 1;
+                                          addr |= si;
+                                          state = MemState::WRITE_15;
+                                          break;
+               case MemState::WRITE_15:   addr <<= 1;
+                                          addr |= si;
+                                          state = MemState::WRITE_16;
+                                          break;
+               case MemState::WRITE_16:   cmd_data <<= 1;
+                                          cmd_data |= si;
+                                          state = MemState::WRITE_17;
+                                          break;
+               case MemState::WRITE_17:   cmd_data <<= 1;
+                                          cmd_data |= si;
+                                          state = MemState::WRITE_18;
+                                          break;
+               case MemState::WRITE_18:   cmd_data <<= 1;
+                                          cmd_data |= si;
+                                          state = MemState::WRITE_19;
+                                          break;
+               case MemState::WRITE_19:   cmd_data <<= 1;
+                                          cmd_data |= si;
+                                          state = MemState::WRITE_20;
+                                          break;
+               case MemState::WRITE_20:   cmd_data <<= 1;
+                                          cmd_data |= si;
+                                          state = MemState::WRITE_21;
+                                          break;
+               case MemState::WRITE_21:   cmd_data <<= 1;
+                                          cmd_data |= si;
+                                          state = MemState::WRITE_22;
+                                          break;
+               case MemState::WRITE_22:   cmd_data <<= 1;
+                                          cmd_data |= si; 
+                                          state = MemState::WRITE_23;
+                                          break;
+               case MemState::WRITE_23:   cmd_data <<= 1;
+                                          cmd_data |= si;
+                                          state = MemState::IDLE;
+                                          mem[addr] = cmd_data;
+                                          printf("WRITE:\tmem[0x%x] <- %x\n", addr, cmd_data);
+                                          break;
+
             }
          } else {
             state =  MemState::IDLE;
@@ -298,7 +420,7 @@ int main(int argc, char** argv, char** env) {
 
    dut->i_rst     = 1;
    dut->i_advance = 1;
-   dut->i_en      = 0;
+   dut->i_valid   = 0;
    dut->i_rd_n_wr = 0;
    dut->i_addr    = 0;
    dut->i_data    = 0;
@@ -317,15 +439,17 @@ int main(int argc, char** argv, char** env) {
                      break;
          
          // Bring Up
-         case 10:    dut->i_en = 1;
+         case 10:    dut->i_valid = 1;
+                     break;
+ 
+         case 100:   dut->i_rd_n_wr = 1;
+                     break;
       }
 
-      
       m.set_sck(dut->o_sck);
       m.set_cs(dut->o_cs);
-      m.set_si(dut->o_so);
-      dut->i_si=m.get_so();
-
+      m.set_si(dut->o_so);      
+      dut->i_si = m.get_so();
       
       //printf ("cycle=%8ld\ti_rst=%d\to_cs=%d\to_so=%d\n",
       //   cycle,

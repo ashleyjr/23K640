@@ -3,13 +3,15 @@ module x_23K640(
    input    logic          i_rst,
    // Master Control 
    input    logic          i_advance,
-   // Application side - Mission Mode
-   input    logic          i_en,
+   // Application side - Requests 
+   input    logic          i_valid,
+   output   logic          o_accept,
    input    logic          i_rd_n_wr,
    input    logic [15:0]   i_addr,
    input    logic [7:0]    i_data,
-   output   logic [7:0]    o_data,
+   // Application side - Completions
    output   logic          o_ready,
+   output   logic [7:0]    o_data,
    // SPI SRAM side
    output   logic          o_sck,
    output   logic          o_cs,
@@ -57,51 +59,51 @@ module x_23K640(
    localparam READ_WARM_20 = 38;
    localparam READ_WARM_21 = 39;
    localparam READ_WARM_22 = 40;
-   localparam READ_WARM_23 = 40;
-   localparam READ_WARM_24 = 40;
-   localparam READ_WARM_25 = 40;
-   localparam READ_WARM_26 = 40;
-   localparam READ_WARM_27 = 40;
-   localparam READ_WARM_28 = 40;
-   localparam READ_WARM_29 = 40;
-   localparam READ_WARM_30 = 40;
-   localparam READ_WARM_31 = 40;
-   localparam WRITE_WARM_0  = 18;
-   localparam WRITE_WARM_1  = 19;
-   localparam WRITE_WARM_2  = 20;
-   localparam WRITE_WARM_3  = 21;
-   localparam WRITE_WARM_4  = 22;
-   localparam WRITE_WARM_5  = 23;
-   localparam WRITE_WARM_6  = 24;
-   localparam WRITE_WARM_7  = 25;
-   localparam WRITE_WARM_8  = 26;
-   localparam WRITE_WARM_9  = 27;
-   localparam WRITE_WARM_10 = 28; 
-   localparam WRITE_WARM_11 = 29;
-   localparam WRITE_WARM_12 = 30;
-   localparam WRITE_WARM_13 = 31;
-   localparam WRITE_WARM_14 = 32;
-   localparam WRITE_WARM_15 = 33;
-   localparam WRITE_WARM_16 = 34;
-   localparam WRITE_WARM_17 = 35;
-   localparam WRITE_WARM_18 = 36;
-   localparam WRITE_WARM_19 = 37;
-   localparam WRITE_WARM_20 = 38;
-   localparam WRITE_WARM_21 = 39;
-   localparam WRITE_WARM_22 = 40;
-   localparam WRITE_WARM_23 = 33;
-   localparam WRITE_WARM_24 = 34;
-   localparam WRITE_WARM_25 = 35;
-   localparam WRITE_WARM_26 = 36;
-   localparam WRITE_WARM_27 = 37;
-   localparam WRITE_WARM_28 = 38;
-   localparam WRITE_WARM_29 = 39;
-   localparam WRITE_WARM_30 = 40;
-   localparam WRITE_WARM_31 = 40;
+   localparam READ_WARM_23 = 41;
+   localparam READ_WARM_24 = 42;
+   localparam READ_WARM_25 = 43;
+   localparam READ_WARM_26 = 43;
+   localparam READ_WARM_27 = 44;
+   localparam READ_WARM_28 = 45;
+   localparam READ_WARM_29 = 46;
+   localparam READ_WARM_30 = 47;
+   localparam READ_WARM_31 = 48;
+   localparam WRITE_WARM_0  = 49;
+   localparam WRITE_WARM_1  = 50;
+   localparam WRITE_WARM_2  = 51;
+   localparam WRITE_WARM_3  = 52;
+   localparam WRITE_WARM_4  = 53;
+   localparam WRITE_WARM_5  = 54;
+   localparam WRITE_WARM_6  = 55;
+   localparam WRITE_WARM_7  = 56;
+   localparam WRITE_WARM_8  = 57;
+   localparam WRITE_WARM_9  = 58;
+   localparam WRITE_WARM_10 = 59; 
+   localparam WRITE_WARM_11 = 60;
+   localparam WRITE_WARM_12 = 61;
+   localparam WRITE_WARM_13 = 62;
+   localparam WRITE_WARM_14 = 63;
+   localparam WRITE_WARM_15 = 64;
+   localparam WRITE_WARM_16 = 66;
+   localparam WRITE_WARM_17 = 67;
+   localparam WRITE_WARM_18 = 68;
+   localparam WRITE_WARM_19 = 69;
+   localparam WRITE_WARM_20 = 70;
+   localparam WRITE_WARM_21 = 71;
+   localparam WRITE_WARM_22 = 72;
+   localparam WRITE_WARM_23 = 73;
+   localparam WRITE_WARM_24 = 74;
+   localparam WRITE_WARM_25 = 75;
+   localparam WRITE_WARM_26 = 76;
+   localparam WRITE_WARM_27 = 77;
+   localparam WRITE_WARM_28 = 78;
+   localparam WRITE_WARM_29 = 79;
+   localparam WRITE_WARM_30 = 80;
+   localparam WRITE_WARM_31 = 81;
 
    logic        sm_en;
-   logic [41:0] sm_d;
-   logic [41:0] sm_q;
+   logic [81:0] sm_d;
+   logic [81:0] sm_q;
 
    // Advance state machine on falling edge
    assign sm_en = o_sck & i_advance; 
@@ -122,14 +124,14 @@ module x_23K640(
       case(1'b1) 
          sm_q[IDLE_COLD]:
             begin
-               sm_d[IDLE_COLD] = ~i_en;
-               sm_d[CONFIG_0]  =  i_en;
+               sm_d[IDLE_COLD] = ~i_valid;
+               sm_d[CONFIG_0]  =  i_valid;
             end
          sm_q[IDLE_WARM]: 
             begin
-               sm_d[IDLE_WARM]    = ~i_en;
-               sm_d[READ_WARM_0]  =  i_en &  i_rd_n_wr;
-               sm_d[WRITE_WARM_0] =  i_en & ~i_rd_n_wr;
+               sm_d[IDLE_WARM]    = ~i_valid;
+               sm_d[READ_WARM_0]  =  i_valid &  i_rd_n_wr;
+               sm_d[WRITE_WARM_0] =  i_valid & ~i_rd_n_wr;
             end
          sm_q[READ_WARM_31]: 
             begin
@@ -158,9 +160,9 @@ module x_23K640(
          sm_q[CONFIG_7],
          sm_q[CONFIG_9],
          sm_q[CONFIG_15],
-         sm_q[READ_WARM_6],
          sm_q[WRITE_WARM_6],
-         sm_q[WRITE_WARM_7]:     o_so = 1'b1;
+         sm_q[READ_WARM_6],
+         sm_q[READ_WARM_7]:     o_so = 1'b1;
          sm_q[READ_WARM_8],
          sm_q[WRITE_WARM_8]:     o_so = i_addr[15];
          sm_q[READ_WARM_9],
@@ -203,7 +205,5 @@ module x_23K640(
          sm_q[WRITE_WARM_31]:    o_so = i_data[0]; 
       endcase
    end
-
-
 
 endmodule
