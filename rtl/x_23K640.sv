@@ -8,10 +8,10 @@ module x_23K640(
    output   logic          o_accept,
    input    logic          i_rd_n_wr,
    input    logic [15:0]   i_addr,
-   input    logic [7:0]    i_data,
+   input    logic [7:0]    i_wdata,
    // Application side - Completions
    output   logic          o_ready,
-   output   logic [7:0]    o_data,
+   output   logic [7:0]    o_rdata,
    // SPI SRAM side
    output   logic          o_sck,
    output   logic          o_cs,
@@ -68,6 +68,7 @@ module x_23K640(
    localparam READ_WARM_29 = 46;
    localparam READ_WARM_30 = 47;
    localparam READ_WARM_31 = 48;
+   localparam READ_WARM_32 = 49;
    localparam WRITE_WARM_0  = 49;
    localparam WRITE_WARM_1  = 50;
    localparam WRITE_WARM_2  = 51;
@@ -101,9 +102,13 @@ module x_23K640(
    localparam WRITE_WARM_30 = 79;
    localparam WRITE_WARM_31 = 80;
 
-   logic        sm_en;
-   logic [81:0] sm_d;
-   logic [81:0] sm_q;
+   logic          sm_en;
+   logic [81:0]   sm_d;
+   logic [81:0]   sm_q;
+
+   logic          rdata_en;
+   logic [7:0]    rdata_d;
+   logic [7:0]    rdata_q;
 
    // Advance state machine on falling edge
    assign sm_en = o_sck & i_advance; 
@@ -133,7 +138,7 @@ module x_23K640(
                sm_d[READ_WARM_0]  =  i_valid &  i_rd_n_wr;
                sm_d[WRITE_WARM_0] =  i_valid & ~i_rd_n_wr;
             end
-         sm_q[READ_WARM_31]: 
+         sm_q[READ_WARM_32]: 
             begin
                sm_d[IDLE_WARM] = 1'b1;
             end
@@ -145,9 +150,32 @@ module x_23K640(
             sm_d = sm_q << 1;
       endcase
    end
+   
+   // App Output: Read data
+
+   assign o_rdata = rdata_q;
+
+   assign rdata_d = {rdata_q[6:0],i_si};
+
+   assign rdata_en = i_advance & ~o_sck &
+                     (sm_q[READ_WARM_24] |
+                      sm_q[READ_WARM_25] |
+                      sm_q[READ_WARM_26] |
+                      sm_q[READ_WARM_27] |
+                      sm_q[READ_WARM_28] |
+                      sm_q[READ_WARM_29] |
+                      sm_q[READ_WARM_30] |
+                      sm_q[READ_WARM_31] |
+                      sm_q[READ_WARM_32]);
+
+   always_ff@(posedge i_clk or posedge i_rst) begin
+      if(i_rst)         rdata_q <= 'd0;
+      else if(rdata_en) rdata_q <= rdata_d;
+   end
+
 
    // App Output: Ready
-   assign o_ready = sm_q[WRITE_WARM_31];
+   assign o_ready = sm_en & sm_q[READ_WARM_32];
 
    // SPI Output: Chip Select
    assign o_cs = sm_q[IDLE_COLD]| 
@@ -195,14 +223,14 @@ module x_23K640(
          sm_q[WRITE_WARM_22]:    o_so = i_addr[1];
          sm_q[READ_WARM_23],
          sm_q[WRITE_WARM_23]:    o_so = i_addr[0];
-         sm_q[WRITE_WARM_24]:    o_so = i_data[7]; 
-         sm_q[WRITE_WARM_25]:    o_so = i_data[6]; 
-         sm_q[WRITE_WARM_26]:    o_so = i_data[5]; 
-         sm_q[WRITE_WARM_27]:    o_so = i_data[4]; 
-         sm_q[WRITE_WARM_28]:    o_so = i_data[3]; 
-         sm_q[WRITE_WARM_29]:    o_so = i_data[2]; 
-         sm_q[WRITE_WARM_30]:    o_so = i_data[1]; 
-         sm_q[WRITE_WARM_31]:    o_so = i_data[0]; 
+         sm_q[WRITE_WARM_24]:    o_so = i_wdata[7]; 
+         sm_q[WRITE_WARM_25]:    o_so = i_wdata[6]; 
+         sm_q[WRITE_WARM_26]:    o_so = i_wdata[5]; 
+         sm_q[WRITE_WARM_27]:    o_so = i_wdata[4]; 
+         sm_q[WRITE_WARM_28]:    o_so = i_wdata[3]; 
+         sm_q[WRITE_WARM_29]:    o_so = i_wdata[2]; 
+         sm_q[WRITE_WARM_30]:    o_so = i_wdata[1]; 
+         sm_q[WRITE_WARM_31]:    o_so = i_wdata[0]; 
       endcase
    end
 

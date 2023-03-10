@@ -79,10 +79,10 @@ enum class MemState {
 
 };
 
-class Mem {
+class SramModel {
    public:
       
-      Mem(bool d){
+      SramModel(bool d){
          debug = d;
          state = MemState::IDLE;
          cmd_data = 0;
@@ -198,14 +198,14 @@ class Mem {
          } 
          // Data Shift Out 
          switch(state){
-            case MemState::READ_16:     
+            case MemState::READ_15:     
+            case MemState::READ_16:   
             case MemState::READ_17:   
             case MemState::READ_18:   
             case MemState::READ_19:   
             case MemState::READ_20:   
             case MemState::READ_21:   
-            case MemState::READ_22:   
-            case MemState::READ_23:    so = 1 & (cmd_data >> 7);  
+            case MemState::READ_22:    so = 1 & (cmd_data >> 7);  
                                        cmd_data <<= 1;
                                        break;
          } 
@@ -257,12 +257,12 @@ class Mem {
             case MemState::READ_10:    state = MemState::READ_11; break;
             case MemState::READ_11:    state = MemState::READ_12; break;
             case MemState::READ_12:    state = MemState::READ_13; break;
-            case MemState::READ_13:    state = MemState::READ_14; break;
-            case MemState::READ_14:    state = MemState::READ_15; break;
-            case MemState::READ_15:    cmd_data = mem[addr];
-                                       state = MemState::READ_16;
+            case MemState::READ_13:    state = MemState::READ_14; break; 
+            case MemState::READ_14:    cmd_data = mem[addr];
+                                       state = MemState::READ_15;
                                        printf("READ:\t\tmem[0x%x] -> %x\n", addr, cmd_data);
                                        break;
+            case MemState::READ_15:    state = MemState::READ_16;    break;
             case MemState::READ_16:    state = MemState::READ_17;    break;
             case MemState::READ_17:    state = MemState::READ_18;    break;
             case MemState::READ_18:    state = MemState::READ_19;    break;
@@ -303,12 +303,111 @@ class Mem {
       }
 };
 
+enum class DriverState { 
+   IDLE,
+   WR,
+   RD
+};
+ 
+class AppDriver {
+   public:
+      
+      AppDriver(){ 
+         state = DriverState::IDLE;
+         valid = 0;
+         rd_n_wr = 0;
+         addr = 0;
+         wdata = 0;
+         rdata = 0;
+         ready = 0;
+         accept = 0;
+         for(int i=0;i<65536;i++){
+            mem[i] = 0xAA;   
+         }
+      }
+     
+      uint8_t get_valid(){
+         return valid;
+      }
+   
+      uint8_t get_rd_n_wr(){
+         return rd_n_wr;
+      }
+
+      uint16_t get_addr(){
+         return addr;
+      }
+
+      uint8_t get_wdata(){
+         return wdata;
+      }
+
+      void set_accept(uint8_t v){
+         accept = v;
+      }
+
+      void set_rdata(uint8_t v){
+         rdata = v;
+      }
+
+      void set_ready(uint8_t v){
+         ready = v;
+      }
+
+      void advance() {
+
+         switch(state){        
+            case DriverState::IDLE:
+               // Start a transactions
+               if(0 == (std::rand() % 2)){ 
+                  rd_n_wr = 1 & std::rand();
+                  addr = std::rand();
+                  wdata = std::rand();
+                  valid = 1;
+                  if(rd_n_wr == 1){
+                     check = mem[addr];
+                     state = DriverState::RD;
+                  } else {
+                     state = DriverState::WR;
+                  }
+               }
+               break;
+            case DriverState::RD:
+               if(ready == 1){
+                  state = DriverState::IDLE;
+                  if(rdata != check){
+                     printf("!!!!!!!!!FAIL\n");
+                  }
+               }
+            case DriverState::WR:
+               if(accept == 1){
+                  state = DriverState::IDLE;
+                  mem[addr] = wdata;
+               }
+         }
+      }
+
+   private:
+      uint8_t valid;
+      uint8_t rd_n_wr;
+      uint16_t addr;
+      uint8_t wdata;
+      uint8_t rdata;
+      uint8_t ready;
+      uint8_t mem[65536];
+      uint8_t accept;
+      uint8_t check;
+      DriverState state;
+
+};
+
 int main(int argc, char** argv, char** env) {
    Vx_23K640 *dut = new Vx_23K640; 
    Verilated::traceEverOn(true);
    VerilatedVcdC *m_trace = new VerilatedVcdC;
-  
-   Mem m(true);
+ 
+   AppDriver d;
+   SramModel m(true);
 
    dut->trace(m_trace, 5);
    m_trace->open("waveform.vcd");
@@ -318,7 +417,7 @@ int main(int argc, char** argv, char** env) {
    dut->i_valid   = 0;
    dut->i_rd_n_wr = 0;
    dut->i_addr    = 0;
-   dut->i_data    = 0;
+   dut->i_wdata   = 0;
    dut->i_si      = 0;
 
    while (cycle < CYCLES) {
@@ -333,14 +432,17 @@ int main(int argc, char** argv, char** env) {
          case 1:     dut->i_rst = 0;
                      break;
          
-         // Bring Up
-         case 10:    dut->i_valid = 1;
-                     break;
- 
-         case 100:   dut->i_rd_n_wr = 1;
-                     break;
       }
- 
+
+      dut->i_valid = d.get_valid();
+      dut->i_rd_n_wr = d.get_rd_n_wr();
+      dut->i_addr = d.get_addr(); 
+      dut->i_wdata = d.get_wdata();
+      d.advance();
+      d.set_accept(dut->o_accept);
+      d.set_rdata(dut->o_rdata);
+      d.set_ready(dut->o_ready);
+
       m.set_cs(dut->o_cs);
       m.set_si(dut->o_so);      
       m.set_sck(dut->o_sck);
