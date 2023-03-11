@@ -6,7 +6,7 @@
 #include "Vx_23K640.h"
 #include <stdio.h>
 
-#define CYCLES 500
+#define CYCLES 10000000
 
 vluint64_t sim_time = 0;
 uint64_t cycle;
@@ -173,9 +173,6 @@ class SramModel {
       uint8_t  mem[65536]; 
 
       void advance() {   
-         //printf("cs:%d si:%d  ", cs, si);
-
-
          // CMD Data Shift In 
          switch(state){
             case MemState::IDLE:    
@@ -246,19 +243,6 @@ class SramModel {
                                        l.log(Verbosity::DEBUG,"[SRAM] ADDR:\t\t0x%x", addr);
                                        break;
          } 
-         // Data Shift Out 
-         switch(state){
-            case MemState::READ_15:     
-            case MemState::READ_16:   
-            case MemState::READ_17:   
-            case MemState::READ_18:   
-            case MemState::READ_19:   
-            case MemState::READ_20:   
-            case MemState::READ_21:   
-            case MemState::READ_22:    so = 1 & (cmd_data >> 7);  
-                                       cmd_data <<= 1;
-                                       break;
-         } 
          // State Transistion Only  
          switch(state){
             case MemState::IDLE:       if(cs == 0){
@@ -308,11 +292,11 @@ class SramModel {
             case MemState::READ_11:    state = MemState::READ_12; break;
             case MemState::READ_12:    state = MemState::READ_13; break;
             case MemState::READ_13:    state = MemState::READ_14; break; 
-            case MemState::READ_14:    cmd_data = mem[addr];
-                                       state = MemState::READ_15;
+            case MemState::READ_14:    state = MemState::READ_15; break; 
+            case MemState::READ_15:    cmd_data = mem[addr];
+                                       state = MemState::READ_16;
                                        l.log(Verbosity::DEBUG,"[SRAM] READ:\t\tmem[0x%x] -> %x", addr, cmd_data);
-                                       break;
-            case MemState::READ_15:    state = MemState::READ_16;    break;
+                                       break; 
             case MemState::READ_16:    state = MemState::READ_17;    break;
             case MemState::READ_17:    state = MemState::READ_18;    break;
             case MemState::READ_18:    state = MemState::READ_19;    break;
@@ -348,6 +332,20 @@ class SramModel {
                                        mem[addr] = cmd_data;
                                        l.log(Verbosity::DEBUG,"[SRAM] WRITE:\t\tmem[0x%x] <- 0x%x", addr, cmd_data);
                                        cmd_data = 0;
+                                       break;
+         }
+         // Data Shift Out 
+         switch(state){
+            case MemState::READ_15:     
+            case MemState::READ_16:   
+            case MemState::READ_17:   
+            case MemState::READ_18:   
+            case MemState::READ_19:   
+            case MemState::READ_20:   
+            case MemState::READ_21:   
+            case MemState::READ_22:
+            case MemState::READ_23:    so = 1 & (cmd_data >> 7);  
+                                       cmd_data <<= 1;
                                        break;
          } 
       }
@@ -409,8 +407,8 @@ class AppDriver {
          switch(state){        
             case DriverState::IDLE:
                // Start a transactions
-               if(0 == (std::rand() % 2)){  
-                  addr = 0;//std::rand();
+               if(0 == (std::rand() % 10)){  
+                  addr = std::rand();
                   wdata = std::rand();
                   valid = 1;
                   if(0 == (std::rand() % 2)){
@@ -437,9 +435,8 @@ class AppDriver {
                }
                break;
             case DriverState::WR:
-               if(accept == 1){
+               if(accept == 1){ 
                   l.log(Verbosity::DEBUG,"[App ] mem[0x%x] <- 0x%x", addr, wdata);
-
                   state = DriverState::IDLE;
                   mem[addr] = wdata;
                }
@@ -495,15 +492,15 @@ int main(int argc, char** argv, char** env) {
       }
 
 
+      d.set_accept(dut->o_accept);
+      d.set_rdata(dut->o_rdata);
+      d.set_ready(dut->o_ready);
+      d.advance();
       dut->i_valid = d.get_valid();
       dut->i_rd_n_wr = d.get_rd_n_wr();
       dut->i_addr = d.get_addr(); 
       dut->i_wdata = d.get_wdata();
-      d.advance();
-      d.set_accept(dut->o_accept);
-      d.set_rdata(dut->o_rdata);
-      d.set_ready(dut->o_ready);
-
+      
       m.set_cs(dut->o_cs);
       m.set_si(dut->o_so);      
       m.set_sck(dut->o_sck);
