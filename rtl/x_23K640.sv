@@ -69,42 +69,42 @@ module x_23K640(
    localparam READ_WARM_30 = 47;
    localparam READ_WARM_31 = 48;
    localparam READ_WARM_32 = 49;
-   localparam WRITE_WARM_0  = 49;
-   localparam WRITE_WARM_1  = 50;
-   localparam WRITE_WARM_2  = 51;
-   localparam WRITE_WARM_3  = 52;
-   localparam WRITE_WARM_4  = 53;
-   localparam WRITE_WARM_5  = 54;
-   localparam WRITE_WARM_6  = 55;
-   localparam WRITE_WARM_7  = 56;
-   localparam WRITE_WARM_8  = 57;
-   localparam WRITE_WARM_9  = 58;
-   localparam WRITE_WARM_10 = 59; 
-   localparam WRITE_WARM_11 = 60;
-   localparam WRITE_WARM_12 = 61;
-   localparam WRITE_WARM_13 = 62;
-   localparam WRITE_WARM_14 = 63;
-   localparam WRITE_WARM_15 = 64;
-   localparam WRITE_WARM_16 = 65;
-   localparam WRITE_WARM_17 = 66;
-   localparam WRITE_WARM_18 = 67;
-   localparam WRITE_WARM_19 = 68;
-   localparam WRITE_WARM_20 = 69;
-   localparam WRITE_WARM_21 = 70;
-   localparam WRITE_WARM_22 = 71;
-   localparam WRITE_WARM_23 = 72;
-   localparam WRITE_WARM_24 = 73;
-   localparam WRITE_WARM_25 = 74;
-   localparam WRITE_WARM_26 = 75;
-   localparam WRITE_WARM_27 = 76;
-   localparam WRITE_WARM_28 = 77;
-   localparam WRITE_WARM_29 = 78;
-   localparam WRITE_WARM_30 = 79;
-   localparam WRITE_WARM_31 = 80;
+   localparam WRITE_WARM_0  = 50;
+   localparam WRITE_WARM_1  = 51;
+   localparam WRITE_WARM_2  = 52;
+   localparam WRITE_WARM_3  = 53;
+   localparam WRITE_WARM_4  = 54;
+   localparam WRITE_WARM_5  = 55;
+   localparam WRITE_WARM_6  = 56;
+   localparam WRITE_WARM_7  = 57;
+   localparam WRITE_WARM_8  = 58;
+   localparam WRITE_WARM_9  = 59;
+   localparam WRITE_WARM_10 = 60; 
+   localparam WRITE_WARM_11 = 61;
+   localparam WRITE_WARM_12 = 62;
+   localparam WRITE_WARM_13 = 63;
+   localparam WRITE_WARM_14 = 64;
+   localparam WRITE_WARM_15 = 65;
+   localparam WRITE_WARM_16 = 66;
+   localparam WRITE_WARM_17 = 67;
+   localparam WRITE_WARM_18 = 68;
+   localparam WRITE_WARM_19 = 69;
+   localparam WRITE_WARM_20 = 70;
+   localparam WRITE_WARM_21 = 71;
+   localparam WRITE_WARM_22 = 72;
+   localparam WRITE_WARM_23 = 73;
+   localparam WRITE_WARM_24 = 74;
+   localparam WRITE_WARM_25 = 75;
+   localparam WRITE_WARM_26 = 76;
+   localparam WRITE_WARM_27 = 77;
+   localparam WRITE_WARM_28 = 78;
+   localparam WRITE_WARM_29 = 79;
+   localparam WRITE_WARM_30 = 80;
+   localparam WRITE_WARM_31 = 81;
 
    logic          sm_en;
-   logic [81:0]   sm_d;
-   logic [81:0]   sm_q;
+   logic [82:0]   sm_d;
+   logic [82:0]   sm_q;
 
    logic          rdata_en;
    logic [7:0]    rdata_d;
@@ -173,6 +173,12 @@ module x_23K640(
       else if(rdata_en) rdata_q <= rdata_d;
    end
 
+
+   // App Output: Ready
+   assign o_accept = sm_en & (
+                        sm_q[READ_WARM_32]|
+                        sm_q[WRITE_WARM_31]
+                     );
 
    // App Output: Ready
    assign o_ready = sm_en & sm_q[READ_WARM_32];

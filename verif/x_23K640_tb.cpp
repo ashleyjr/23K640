@@ -6,10 +6,56 @@
 #include "Vx_23K640.h"
 #include <stdio.h>
 
-#define CYCLES 200
+#define CYCLES 200000
 
 vluint64_t sim_time = 0;
 uint64_t cycle;
+
+enum class Verbosity { 
+   ERROR,
+   INFO,
+   DEBUG
+};
+
+class Logger {
+   public: 
+      Logger(char const * filename){  
+         fail = false;
+         f = fopen(filename, "w+");
+      } 
+      ~Logger(){
+         printf("====\n");
+         if(fail){
+            printf("FAIL\n");
+         }else{
+            printf("PASS\n");
+         }
+         printf("====\n");
+         fclose(f);
+      }
+
+      void log(Verbosity v, const char *format, ...){
+         char * str;
+         va_list args;
+         va_start(args, format);
+         switch(v){
+            case Verbosity::ERROR:  fail = true;
+            case Verbosity::INFO:   printf("%10ld: ",sim_time);
+                                    vprintf(format,args);
+                                    printf("\n");
+            case Verbosity::DEBUG:  fprintf(f,"%10ld: ",sim_time);
+                                    vfprintf(f,format,args);
+                                    fprintf(f,"\n");
+         }
+         va_end(args);
+      } 
+   
+   private:
+      FILE *f; 
+      bool fail;
+};
+
+Logger l("logfile.txt");
 
 enum class MemState { 
    IDLE,
@@ -82,8 +128,7 @@ enum class MemState {
 class SramModel {
    public:
       
-      SramModel(bool d){
-         debug = d;
+      SramModel(){  
          state = MemState::IDLE;
          cmd_data = 0;
          so = 0;
@@ -120,7 +165,7 @@ class SramModel {
       uint16_t addr;
       uint8_t  cmd_data;
       uint8_t  sck_last;
-      uint8_t  mem[65536];
+      uint8_t  mem[65536]; 
 
       void advance() {   
          //printf("cs:%d si:%d  ", cs, si);
@@ -154,7 +199,7 @@ class SramModel {
             case MemState::WRITE_23:   if(cs == 0){
                                           cmd_data <<= 1;
                                           cmd_data |= si;
-                                          printf("CMD/DATA:\t0x%x\n", cmd_data);
+                                          l.log(Verbosity::DEBUG,"CMD/DATA:\t0x%x", cmd_data);
                                        }
                                        break;
          }
@@ -193,7 +238,7 @@ class SramModel {
             case MemState::WRITE_14:
             case MemState::WRITE_15:   addr <<= 1;
                                        addr |= si;
-                                       printf("ADDR:\t\t0x%x\n", addr);
+                                       l.log(Verbosity::DEBUG,"ADDR:\t\t0x%x", addr);
                                        break;
          } 
          // Data Shift Out 
@@ -226,7 +271,7 @@ class SramModel {
                                           case 2:  state = MemState::WRITE_0; break;
                                           case 5:  state = MemState::IDLE;    break;
                                           case 1:  state = MemState::WRSR_0;  break;
-                                          default: printf("INVALID CMD\n");
+                                          default: l.log(Verbosity::DEBUG,"INVALID CMD");
                                                    break; 
                                        }
                                        break;            
@@ -237,9 +282,9 @@ class SramModel {
             case MemState::WRSR_4:     state = MemState::WRSR_5;  break;
             case MemState::WRSR_5:     state = MemState::WRSR_6;  break;
             case MemState::WRSR_6:     state = MemState::WRSR_7;  break;
-            case MemState::WRSR_7:     printf("WRSR:\t\t0x%x\n", cmd_data);
+            case MemState::WRSR_7:     l.log(Verbosity::DEBUG,"WRSR:\t\t0x%x", cmd_data);
                                        if(cmd_data != 0x41){
-                                          printf("INVALID WRSR\n");
+                                          l.log(Verbosity::DEBUG,"INVALID WRSR");
                                        }
                                        cmd_data = 0; 
                                        state = MemState::IDLE;
@@ -260,7 +305,7 @@ class SramModel {
             case MemState::READ_13:    state = MemState::READ_14; break; 
             case MemState::READ_14:    cmd_data = mem[addr];
                                        state = MemState::READ_15;
-                                       printf("READ:\t\tmem[0x%x] -> %x\n", addr, cmd_data);
+                                       l.log(Verbosity::DEBUG,"READ:\t\tmem[0x%x] -> %x", addr, cmd_data);
                                        break;
             case MemState::READ_15:    state = MemState::READ_16;    break;
             case MemState::READ_16:    state = MemState::READ_17;    break;
@@ -296,7 +341,7 @@ class SramModel {
             case MemState::WRITE_22:   state = MemState::WRITE_23;   break; 
             case MemState::WRITE_23:   state = MemState::IDLE;
                                        mem[addr] = cmd_data;
-                                       printf("WRITE:\t\tmem[0x%x] <- 0x%x\n", addr, cmd_data);
+                                       l.log(Verbosity::DEBUG,"WRITE:\t\tmem[0x%x] <- 0x%x", addr, cmd_data);
                                        cmd_data = 0;
                                        break;
          } 
@@ -359,31 +404,39 @@ class AppDriver {
          switch(state){        
             case DriverState::IDLE:
                // Start a transactions
-               if(0 == (std::rand() % 2)){ 
-                  rd_n_wr = 1 & std::rand();
+               if(0 == (std::rand() % 2)){  
                   addr = std::rand();
                   wdata = std::rand();
                   valid = 1;
-                  if(rd_n_wr == 1){
+                  if(0 == (std::rand() % 2)){
+                     rd_n_wr = 1;
                      check = mem[addr];
+                     l.log(Verbosity::DEBUG,"App: mem[0x%x] -> 0x%x", addr, check);
                      state = DriverState::RD;
                   } else {
+                     rd_n_wr = 0;
                      state = DriverState::WR;
                   }
+               }else{
+                  valid = 0;
                }
                break;
             case DriverState::RD:
                if(ready == 1){
                   state = DriverState::IDLE;
                   if(rdata != check){
-                     printf("!!!!!!!!!FAIL\n");
+                     l.log(Verbosity::ERROR,"Read mismatch");
                   }
                }
+               break;
             case DriverState::WR:
                if(accept == 1){
+                  l.log(Verbosity::DEBUG,"App: mem[0x%x] <- 0x%x", addr, wdata);
+
                   state = DriverState::IDLE;
                   mem[addr] = wdata;
                }
+               break;
          }
       }
 
@@ -407,7 +460,7 @@ int main(int argc, char** argv, char** env) {
    VerilatedVcdC *m_trace = new VerilatedVcdC;
  
    AppDriver d;
-   SramModel m(true);
+   SramModel m;
 
    dut->trace(m_trace, 5);
    m_trace->open("waveform.vcd");
@@ -429,10 +482,11 @@ int main(int argc, char** argv, char** env) {
       switch(cycle){
          
          // Reset
-         case 1:     dut->i_rst = 0;
+         case 10:    dut->i_rst = 0;
                      break;
          
       }
+
 
       dut->i_valid = d.get_valid();
       dut->i_rd_n_wr = d.get_rd_n_wr();
@@ -446,13 +500,7 @@ int main(int argc, char** argv, char** env) {
       m.set_cs(dut->o_cs);
       m.set_si(dut->o_so);      
       m.set_sck(dut->o_sck);
-      dut->i_si = m.get_so();
-      
-      //printf ("cycle=%8ld\ti_rst=%d\to_cs=%d\to_so=%d\n",
-      //   cycle,
-      //   dut->i_rst,
-      //   dut->o_cs, 
-      //   dut->o_so);
+      dut->i_si = m.get_so(); 
           
       // Tick
       dut->eval();
