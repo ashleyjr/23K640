@@ -371,8 +371,8 @@ class AppDriver {
          accept = 0;
          coverage = 0;
          // Set number of addresses 
-         if(n < 2){
-            num_addrs = 2;
+         if(n < 1){
+            num_addrs = 1;
          }else{
             num_addrs = n;
          }
@@ -420,14 +420,6 @@ class AppDriver {
 
       void set_ready(uint8_t v){
          ready = v;
-      } 
-
-      void set_num_addrs(uint16_t v){
-         if(v < 2){
-            num_addrs = 2;
-         }else{
-            num_addrs = v;
-         }
       } 
       
       void advance() {
@@ -525,7 +517,7 @@ int main(int argc, char** argv, char** env) {
    Verilated::traceEverOn(true);
    VerilatedVcdC *m_trace = new VerilatedVcdC;
  
-   AppDriver d(100);
+   AppDriver d(1);
    SramModel m; 
 
    dut->trace(m_trace, 5);
