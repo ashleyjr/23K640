@@ -360,7 +360,7 @@ enum class DriverState {
 class AppDriver {
    public:
       
-      AppDriver(uint16_t n, uint16_t b){ 
+      AppDriver(uint16_t n, uint16_t b, uint16_t r, uint16_t w){ 
          state = DriverState::IDLE;
          valid = 0;
          rd_n_wr = 0;
@@ -374,6 +374,8 @@ class AppDriver {
          wbw = 0;
          rbw = 0;
          backpressure = b;
+         all_reads = r;
+         all_writes = w;
          // Set number of addresses 
          if(n < 1){
             num_addrs = 1;
@@ -502,6 +504,8 @@ class AppDriver {
       uint32_t wbw;
       uint32_t rbw;
       uint16_t backpressure;
+      uint16_t all_reads;
+      uint16_t all_writes;
       
       void request_profile(){
          uint16_t index;
@@ -510,11 +514,17 @@ class AppDriver {
             addr = addrs[index];
             cov[index] = true; 
             wdata = std::rand();
-            valid = 1;
+            valid = 1; 
             if(0 == (std::rand() % 2)){
                rd_n_wr = 1;
             } else {
                rd_n_wr = 0;
+            }
+            if(1 == all_reads){
+               rd_n_wr = 1; 
+            }
+            if(1 == all_writes){
+               rd_n_wr = 0; 
             }
          }else{
             valid = 0;      
@@ -542,8 +552,10 @@ int main(int argc, char** argv, char** env) {
    uint32_t stop = std::stoi(argv[1]);
    uint16_t addrs = std::stoi(argv[2]);
    uint16_t backpressure = std::stoi(argv[3]);
+   uint16_t all_reads = std::stoi(argv[4]);
+   uint16_t all_writes = std::stoi(argv[5]);
    
-   AppDriver d(addrs, backpressure);
+   AppDriver d(addrs, backpressure, all_reads, all_writes);
    SramModel m; 
 
    dut->trace(m_trace, 5);
