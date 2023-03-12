@@ -109,6 +109,11 @@ module x_23K640(
    logic          rdata_en;
    logic [7:0]    rdata_d;
    logic [7:0]    rdata_q;
+   
+   logic          wdata_en;
+   logic [7:0]    wdata_d;
+   logic [7:0]    wdata_q;
+
 
    // Advance state machine on falling edge
    assign sm_en = o_sck & i_advance; 
@@ -118,12 +123,13 @@ module x_23K640(
       else if(sm_en) sm_q <= sm_d;
    end
 
-   // Ouput the clock
+   // Output the clock
    always_ff@(posedge i_clk or posedge i_rst) begin
       if(i_rst)            o_sck <= 'd0;
       else if(i_advance)   o_sck <= ~o_sck;
    end   
- 
+
+   // State transistors
    always_comb begin
       sm_d = 'd0;
       case(1'b1) 
@@ -151,8 +157,18 @@ module x_23K640(
       endcase
    end
    
-   // App Output: Read data
+   // Latch the write data
 
+   assign wdata_en = i_valid & ~i_rd_n_wr & o_accept;
+
+   assign wdata_d = i_wdata;
+
+   always_ff@(posedge i_clk or posedge i_rst) begin
+      if(i_rst)         wdata_q <= 'd0;
+      else if(wdata_en) wdata_q <= wdata_d;
+   end   
+
+   // App Output: Read data
    assign o_rdata = rdata_q;
 
    assign rdata_d = {rdata_q[6:0],i_si};
@@ -176,8 +192,8 @@ module x_23K640(
 
    // App Output: Ready
    assign o_accept = sm_en & (
-                        sm_q[READ_WARM_32]|
-                        sm_q[WRITE_WARM_31]
+                        sm_q[READ_WARM_24]|
+                        sm_q[WRITE_WARM_23]
                      );
 
    // App Output: Ready
@@ -229,14 +245,14 @@ module x_23K640(
          sm_q[WRITE_WARM_22]:    o_so = i_addr[1];
          sm_q[READ_WARM_23],
          sm_q[WRITE_WARM_23]:    o_so = i_addr[0];
-         sm_q[WRITE_WARM_24]:    o_so = i_wdata[7]; 
-         sm_q[WRITE_WARM_25]:    o_so = i_wdata[6]; 
-         sm_q[WRITE_WARM_26]:    o_so = i_wdata[5]; 
-         sm_q[WRITE_WARM_27]:    o_so = i_wdata[4]; 
-         sm_q[WRITE_WARM_28]:    o_so = i_wdata[3]; 
-         sm_q[WRITE_WARM_29]:    o_so = i_wdata[2]; 
-         sm_q[WRITE_WARM_30]:    o_so = i_wdata[1]; 
-         sm_q[WRITE_WARM_31]:    o_so = i_wdata[0]; 
+         sm_q[WRITE_WARM_24]:    o_so = wdata_q[7]; 
+         sm_q[WRITE_WARM_25]:    o_so = wdata_q[6]; 
+         sm_q[WRITE_WARM_26]:    o_so = wdata_q[5]; 
+         sm_q[WRITE_WARM_27]:    o_so = wdata_q[4]; 
+         sm_q[WRITE_WARM_28]:    o_so = wdata_q[3]; 
+         sm_q[WRITE_WARM_29]:    o_so = wdata_q[2]; 
+         sm_q[WRITE_WARM_30]:    o_so = wdata_q[1]; 
+         sm_q[WRITE_WARM_31]:    o_so = wdata_q[0]; 
       endcase
    end
 

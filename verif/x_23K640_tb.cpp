@@ -6,7 +6,7 @@
 #include "Vx_23K640.h"
 #include <stdio.h>
 
-#define CYCLES 10000000
+#define CYCLES 100000
 
 vluint64_t sim_time = 0;
 uint64_t cycle;
@@ -201,7 +201,7 @@ class SramModel {
             case MemState::WRITE_23:   if(cs == 0){
                                           cmd_data <<= 1;
                                           cmd_data |= si;
-                                          l.log(Verbosity::DEBUG,"[SRAM] CMD/DATA:\t0x%x", cmd_data);
+                                          l.log(Verbosity::DEBUG,"[SRAM] CMD/DATA:\t0x%02X", cmd_data);
                                        }
                                        break;
          }
@@ -240,7 +240,7 @@ class SramModel {
             case MemState::WRITE_14:
             case MemState::WRITE_15:   addr <<= 1;
                                        addr |= si;
-                                       l.log(Verbosity::DEBUG,"[SRAM] ADDR:\t\t0x%x", addr);
+                                       l.log(Verbosity::DEBUG,"[SRAM] ADDR:\t\t0x%04X", addr);
                                        break;
          } 
          // State Transistion Only  
@@ -271,7 +271,7 @@ class SramModel {
             case MemState::WRSR_4:     state = MemState::WRSR_5;  break;
             case MemState::WRSR_5:     state = MemState::WRSR_6;  break;
             case MemState::WRSR_6:     state = MemState::WRSR_7;  break;
-            case MemState::WRSR_7:     l.log(Verbosity::DEBUG,"[SRAM] WRSR:\t\t0x%x", cmd_data);
+            case MemState::WRSR_7:     l.log(Verbosity::DEBUG,"[SRAM] WRSR:\t\t0x%02X", cmd_data);
                                        if(cmd_data != 0x41){
                                           l.log(Verbosity::ERROR,"[SRAM] INVALID WRSR");
                                        }
@@ -295,7 +295,7 @@ class SramModel {
             case MemState::READ_14:    state = MemState::READ_15; break; 
             case MemState::READ_15:    cmd_data = mem[addr];
                                        state = MemState::READ_16;
-                                       l.log(Verbosity::DEBUG,"[SRAM] READ:\t\tmem[0x%x] -> %x", addr, cmd_data);
+                                       l.log(Verbosity::DEBUG,"[SRAM] READ:\t\tmem[0x%04X] -> 0x%02X", addr, cmd_data);
                                        break; 
             case MemState::READ_16:    state = MemState::READ_17;    break;
             case MemState::READ_17:    state = MemState::READ_18;    break;
@@ -330,7 +330,7 @@ class SramModel {
             case MemState::WRITE_22:   state = MemState::WRITE_23;   break; 
             case MemState::WRITE_23:   state = MemState::IDLE;
                                        mem[addr] = cmd_data;
-                                       l.log(Verbosity::DEBUG,"[SRAM] WRITE:\t\tmem[0x%x] <- 0x%x", addr, cmd_data);
+                                       l.log(Verbosity::DEBUG,"[SRAM] WRITE:\t\tmem[0x%04X] <- 0x%02X", addr, cmd_data);
                                        cmd_data = 0;
                                        break;
          }
@@ -360,7 +360,7 @@ enum class DriverState {
 class AppDriver {
    public:
       
-      AppDriver(){ 
+      AppDriver(uint16_t n){ 
          state = DriverState::IDLE;
          valid = 0;
          rd_n_wr = 0;
@@ -369,9 +369,29 @@ class AppDriver {
          rdata = 0;
          ready = 0;
          accept = 0;
+         coverage = 0;
+         // Set number of addresses 
+         if(n < 2){
+            num_addrs = 2;
+         }else{
+            num_addrs = n;
+         }
          for(int i=0;i<65536;i++){
             mem[i] = 0xAA;   
          }
+         // Initialise coverage
+         for(int i=0;i<65536;i++){
+            cov[i] = false;;   
+         }
+         // Always take top and bottom
+         addrs[0] = 0;
+         addrs[1] = 0xFFFF;
+        
+         // Fill the rest with random but unique addresses
+         for(uint32_t i=1;i<0xFFFF;i++){
+            addrs[i+1] = i;
+         }
+         std::random_shuffle(&addrs[2],&addrs[0xFFFF]);
       }
      
       uint8_t get_valid(){
@@ -400,43 +420,51 @@ class AppDriver {
 
       void set_ready(uint8_t v){
          ready = v;
-      }
+      } 
 
+      void set_num_addrs(uint16_t v){
+         if(v < 2){
+            num_addrs = 2;
+         }else{
+            num_addrs = v;
+         }
+      } 
+      
       void advance() {
+         check_coverage();
 
+         // Ready could be asserted in any state
+         if(ready == 1){
+            if(rdata != check){
+               l.log(Verbosity::ERROR,"[App ] Mismatch mem[0x%04X]", addr); 
+               l.log(Verbosity::ERROR,"[App ] \tGot:      0x%02X", rdata); 
+               l.log(Verbosity::ERROR,"[App ] \tExpected: 0x%02X", check); 
+            }
+         }
+        
+         // State transistons
          switch(state){        
             case DriverState::IDLE:
-               // Start a transactions
-               if(0 == (std::rand() % 10)){  
-                  addr = std::rand();
-                  wdata = std::rand();
-                  valid = 1;
-                  if(0 == (std::rand() % 2)){
-                     rd_n_wr = 1;
-                     check = mem[addr];
-                     l.log(Verbosity::DEBUG,"[App ] mem[0x%4x] -> 0x%2x", addr, check);
+               // Start a transactions 
+               request_profile(); 
+               if(valid == 1){
+                  if(rd_n_wr){
                      state = DriverState::RD;
                   } else {
-                     rd_n_wr = 0;
                      state = DriverState::WR;
                   }
-               }else{
-                  valid = 0;
                }
                break;
             case DriverState::RD:
-               if(ready == 1){
-                  state = DriverState::IDLE;
-                  if(rdata != check){
-                     l.log(Verbosity::ERROR,"[App ] Mismatch mem[0x%04x]", addr); 
-                     l.log(Verbosity::ERROR,"[App ] \tGot:      0x%02x", rdata); 
-                     l.log(Verbosity::ERROR,"[App ] \tExpected: 0x%02x", check); 
-                  }
+               if(accept == 1){
+                  check = mem[addr];
+                  l.log(Verbosity::DEBUG,"[App ] mem[0x%04X] -> 0x%02X", addr, check);
+                  state = DriverState::IDLE; 
                }
                break;
             case DriverState::WR:
                if(accept == 1){ 
-                  l.log(Verbosity::DEBUG,"[App ] mem[0x%x] <- 0x%x", addr, wdata);
+                  l.log(Verbosity::DEBUG,"[App ] mem[0x%04X] <- 0x%02X", addr, wdata);
                   state = DriverState::IDLE;
                   mem[addr] = wdata;
                }
@@ -448,6 +476,10 @@ class AppDriver {
       uint8_t valid;
       uint8_t rd_n_wr;
       uint16_t addr;
+      uint16_t num_addrs;
+      uint16_t addrs[65536];
+      bool cov[65536];
+      uint16_t coverage;
       uint8_t wdata;
       uint8_t rdata;
       uint8_t ready;
@@ -456,6 +488,36 @@ class AppDriver {
       uint8_t check;
       DriverState state;
 
+      void request_profile(){
+         uint16_t index;
+         if(0 == (std::rand() % 10)){  
+            index = std::rand() % num_addrs;
+            addr = addrs[index];
+            cov[index] = true; 
+            wdata = std::rand();
+            valid = 1;
+            if(0 == (std::rand() % 2)){
+               rd_n_wr = 1;
+            } else {
+               rd_n_wr = 0;
+            }
+         }else{
+            valid = 0;      
+         }
+      }
+      void check_coverage(){
+         uint16_t this_cov = 0; 
+         for(uint16_t i=0;i<num_addrs;i++){
+            if(cov[i]){
+               this_cov++;
+            }
+         }     
+         if(this_cov > coverage){
+            l.log(Verbosity::DEBUG,"[App ] Coverage: %04X/%04X", this_cov, num_addrs);
+            coverage = this_cov;
+         }
+      
+      }
 };
 
 int main(int argc, char** argv, char** env) {
@@ -463,8 +525,8 @@ int main(int argc, char** argv, char** env) {
    Verilated::traceEverOn(true);
    VerilatedVcdC *m_trace = new VerilatedVcdC;
  
-   AppDriver d;
-   SramModel m;
+   AppDriver d(100);
+   SramModel m; 
 
    dut->trace(m_trace, 5);
    m_trace->open("waveform.vcd");
