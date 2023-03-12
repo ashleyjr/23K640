@@ -360,7 +360,7 @@ enum class DriverState {
 class AppDriver {
    public:
       
-      AppDriver(uint16_t n){ 
+      AppDriver(uint16_t n, uint16_t b){ 
          state = DriverState::IDLE;
          valid = 0;
          rd_n_wr = 0;
@@ -370,6 +370,10 @@ class AppDriver {
          ready = 0;
          accept = 0;
          coverage = 0;
+         cycles = 0;
+         wbw = 0;
+         rbw = 0;
+         backpressure = b;
          // Set number of addresses 
          if(n < 1){
             num_addrs = 1;
@@ -393,7 +397,19 @@ class AppDriver {
          }
          std::random_shuffle(&addrs[2],&addrs[0xFFFF]);
       }
-     
+      
+      void report_bw(){ 
+         float wbits_per_cycle = (float)wbw / (float)cycles;
+         float rbits_per_cycle = (float)rbw / (float)cycles;
+
+         l.log(Verbosity::INFO,"[App ] Cycles:       %08d", cycles);
+         l.log(Verbosity::INFO,"[App ] Bits written: %08d", wbw);
+         l.log(Verbosity::INFO,"[App ] Bits read:    %08d", rbw);
+         l.log(Verbosity::INFO,"[App ] Write:        %08f bits/cycle", wbits_per_cycle);
+         l.log(Verbosity::INFO,"[App ] Read:         %08f bits/cycle", rbits_per_cycle);
+
+      }
+
       uint8_t get_valid(){
          return valid;
       }
@@ -423,10 +439,12 @@ class AppDriver {
       } 
       
       void advance() {
+         cycles++;
          check_coverage();
 
          // Ready could be asserted in any state
          if(ready == 1){
+            rbw += 8;
             if(rdata != check){
                l.log(Verbosity::ERROR,"[App ] Mismatch mem[0x%04X]", addr); 
                l.log(Verbosity::ERROR,"[App ] \tGot:      0x%02X", rdata); 
@@ -456,6 +474,7 @@ class AppDriver {
                break;
             case DriverState::WR:
                if(accept == 1){ 
+                  wbw += 8;
                   l.log(Verbosity::DEBUG,"[App ] mem[0x%04X] <- 0x%02X", addr, wdata);
                   state = DriverState::IDLE;
                   mem[addr] = wdata;
@@ -479,10 +498,14 @@ class AppDriver {
       uint8_t accept;
       uint8_t check;
       DriverState state;
-
+      uint32_t cycles;
+      uint32_t wbw;
+      uint32_t rbw;
+      uint16_t backpressure;
+      
       void request_profile(){
          uint16_t index;
-         if(0 == (std::rand() % 10)){  
+         if(0 == (std::rand() % backpressure)){  
             index = std::rand() % num_addrs;
             addr = addrs[index];
             cov[index] = true; 
@@ -515,9 +538,12 @@ class AppDriver {
 int main(int argc, char** argv, char** env) {
    Vx_23K640 *dut = new Vx_23K640; 
    Verilated::traceEverOn(true);
-   VerilatedVcdC *m_trace = new VerilatedVcdC;
- 
-   AppDriver d(1);
+   VerilatedVcdC *m_trace = new VerilatedVcdC; 
+   uint32_t stop = std::stoi(argv[1]);
+   uint16_t addrs = std::stoi(argv[2]);
+   uint16_t backpressure = std::stoi(argv[3]);
+   
+   AppDriver d(addrs, backpressure);
    SramModel m; 
 
    dut->trace(m_trace, 5);
@@ -531,7 +557,7 @@ int main(int argc, char** argv, char** env) {
    dut->i_wdata   = 0;
    dut->i_si      = 0;
 
-   while (cycle < CYCLES) {
+   while (cycle < stop) {
       
       // Falling Edge
       dut->i_clk = 0;
@@ -577,6 +603,8 @@ int main(int argc, char** argv, char** env) {
       cycle = sim_time >> 1;
    }
    
+   d.report_bw();
+
    m_trace->close();
    delete dut;
    exit(EXIT_SUCCESS);

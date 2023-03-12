@@ -2,4 +2,4 @@
 
 ./build
 
-./obj_dir/Vx_23K640
+./obj_dir/Vx_23K640 "$@"
