@@ -293,18 +293,29 @@ class SramModel {
             case MemState::READ_12:    state = MemState::READ_13; break;
             case MemState::READ_13:    state = MemState::READ_14; break; 
             case MemState::READ_14:    state = MemState::READ_15; break; 
-            case MemState::READ_15:    cmd_data = mem[addr];
-                                       state = MemState::READ_16;
-                                       l.log(Verbosity::DEBUG,"[SRAM] READ:\t\tmem[0x%04X] -> 0x%02X", addr, cmd_data);
+            case MemState::READ_15:    if(cs == 0){
+                                          cmd_data = mem[addr];
+                                          state = MemState::READ_16;
+                                          l.log(Verbosity::DEBUG,"[SRAM] READ:\t\tmem[0x%04X] -> 0x%02X", addr, cmd_data);
+                                       }else{
+                                          state = MemState::IDLE;
+                                       }
                                        break; 
-            case MemState::READ_16:    state = MemState::READ_17;    break;
+            case MemState::READ_16:    if(cs == 0){
+                                          state = MemState::READ_17; 
+                                       }else{
+                                          state = MemState::IDLE; 
+                                       }
+                                       break;
             case MemState::READ_17:    state = MemState::READ_18;    break;
             case MemState::READ_18:    state = MemState::READ_19;    break;
             case MemState::READ_19:    state = MemState::READ_20;    break;
             case MemState::READ_20:    state = MemState::READ_21;    break;
             case MemState::READ_21:    state = MemState::READ_22;    break;
             case MemState::READ_22:    state = MemState::READ_23;    break;
-            case MemState::READ_23:    state = MemState::IDLE;       break;
+            case MemState::READ_23:    addr++;
+                                       cmd_data = mem[addr];
+                                       state = MemState::READ_16;    break;
             case MemState::WRITE_0:    state = MemState::WRITE_1;    break;
             case MemState::WRITE_1:    state = MemState::WRITE_2;    break;
             case MemState::WRITE_2:    state = MemState::WRITE_3;    break;
@@ -397,7 +408,7 @@ class AppDriver {
          for(uint32_t i=1;i<0xFFFF;i++){
             addrs[i+1] = i;
          }
-         std::random_shuffle(&addrs[2],&addrs[0xFFFF]);
+         //std::random_shuffle(&addrs[2],&addrs[0xFFFF]);
       }
       
       void report_bw(){ 
@@ -448,7 +459,7 @@ class AppDriver {
          if(ready == 1){
             rbw += 8;
             if(rdata != check){
-               l.log(Verbosity::ERROR,"[App ] Mismatch mem[0x%04X]", addr); 
+               l.log(Verbosity::ERROR,"[App ] Mismatch mem[0x%04X]", check_addr); 
                l.log(Verbosity::ERROR,"[App ] \tGot:      0x%02X", rdata); 
                l.log(Verbosity::ERROR,"[App ] \tExpected: 0x%02X", check); 
             }
@@ -470,7 +481,8 @@ class AppDriver {
             case DriverState::RD:
                if(accept == 1){
                   check = mem[addr];
-                  l.log(Verbosity::DEBUG,"[App ] mem[0x%04X] -> 0x%02X", addr, check);
+                  check_addr = addr;
+                  l.log(Verbosity::DEBUG,"[App ] mem[0x%04X] -> 0x%02X", check_addr, check);
                   state = DriverState::IDLE; 
                }
                break;
@@ -506,6 +518,7 @@ class AppDriver {
       uint16_t backpressure;
       uint16_t all_reads;
       uint16_t all_writes;
+      uint16_t check_addr;
       
       void request_profile(){
          uint16_t index;

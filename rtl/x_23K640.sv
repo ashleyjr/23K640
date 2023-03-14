@@ -114,6 +114,12 @@ module x_23K640(
    logic [7:0]    wdata_d;
    logic [7:0]    wdata_q;
 
+   logic          addr_en;
+   logic [15:0]   addr_d;
+   logic [15:0]   addr_q;
+
+   logic          rd_n_wr_q;
+   logic          hop;
 
    // Advance state machine on falling edge
    assign sm_en = o_sck & i_advance; 
@@ -128,6 +134,9 @@ module x_23K640(
       if(i_rst)            o_sck <= 'd0;
       else if(i_advance)   o_sck <= ~o_sck;
    end   
+
+   // The next operation is to a sequenctial address so continue
+   assign hop = i_valid & (i_addr == (addr_q + 'd1));
 
    // State transistors
    always_comb begin
@@ -146,7 +155,10 @@ module x_23K640(
             end
          sm_q[READ_WARM_32]: 
             begin
-               sm_d[IDLE_WARM] = 1'b1;
+               if(hop & rd_n_wr_q & i_rd_n_wr)
+                  sm_d[READ_WARM_24] = 1'b1;
+               else
+                  sm_d[IDLE_WARM] = 1'b1;
             end
          sm_q[WRITE_WARM_31]: 
             begin
@@ -168,6 +180,16 @@ module x_23K640(
       else if(wdata_en) wdata_q <= wdata_d;
    end   
 
+   // Latch the addr
+   assign addr_en = sm_q[READ_WARM_24] | sm_q[WRITE_WARM_23];
+
+   assign addr_d = i_addr;
+
+   always_ff@(posedge i_clk or posedge i_rst) begin
+      if(i_rst)         addr_q <= 'd0;
+      else if(addr_en)  addr_q <= addr_d;
+   end 
+   
    // App Output: Read data
    assign o_rdata = rdata_q;
 
@@ -195,6 +217,11 @@ module x_23K640(
                         sm_q[READ_WARM_24]|
                         sm_q[WRITE_WARM_23]
                      );
+
+   always_ff@(posedge i_clk or posedge i_rst) begin
+      if(i_rst)         rd_n_wr_q <= 'd0;
+      else if(o_accept) rd_n_wr_q <= sm_q[READ_WARM_24];
+   end   
 
    // App Output: Ready
    assign o_ready = sm_en & sm_q[READ_WARM_32];
