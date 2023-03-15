@@ -162,8 +162,11 @@ module x_23K640(
             end
          sm_q[WRITE_WARM_31]: 
             begin
-               sm_d[IDLE_WARM] = 1'b1;
-            end
+               //if(hop & ~rd_n_wr_q & ~i_rd_n_wr)
+               //   sm_d[WRITE_WARM_23] = 1'b1;
+               //else
+                  sm_d[IDLE_WARM] = 1'b1;
+            end   
          default: 
             sm_d = sm_q << 1;
       endcase
