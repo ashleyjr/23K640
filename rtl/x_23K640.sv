@@ -234,47 +234,47 @@ module x_23K640(
          CONFIG_15,
          WRITE_WARM_6,
          READ_WARM_6,
-         READ_WARM_7:     o_so = 1'b1;
-         READ_WARM_8,
-         WRITE_WARM_8:     o_so = i_addr[15];
-         READ_WARM_9,
-         WRITE_WARM_9:     o_so = i_addr[14];
-         READ_WARM_10,
-         WRITE_WARM_10:    o_so = i_addr[13];
-         READ_WARM_11,
-         WRITE_WARM_11:    o_so = i_addr[12];
-         READ_WARM_12,
-         WRITE_WARM_12:    o_so = i_addr[11];
-         READ_WARM_13,
-         WRITE_WARM_13:    o_so = i_addr[10];
-         READ_WARM_14,
-         WRITE_WARM_14:    o_so = i_addr[9];
-         READ_WARM_15,
-         WRITE_WARM_15:    o_so = i_addr[8];
-         READ_WARM_16,
-         WRITE_WARM_16:    o_so = i_addr[7];
-         READ_WARM_17,
-         WRITE_WARM_17:    o_so = i_addr[6];
-         READ_WARM_18,
-         WRITE_WARM_18:    o_so = i_addr[5];
-         READ_WARM_19,
-         WRITE_WARM_19:    o_so = i_addr[4];
-         READ_WARM_20,
-         WRITE_WARM_20:    o_so = i_addr[3];
-         READ_WARM_21,
-         WRITE_WARM_21:    o_so = i_addr[2];
-         READ_WARM_22,
-         WRITE_WARM_22:    o_so = i_addr[1];
-         READ_WARM_23,
-         WRITE_WARM_23:    o_so = i_addr[0];
-         WRITE_WARM_24:    o_so = wdata_q[7]; 
-         WRITE_WARM_25:    o_so = wdata_q[6]; 
-         WRITE_WARM_26:    o_so = wdata_q[5]; 
-         WRITE_WARM_27:    o_so = wdata_q[4]; 
-         WRITE_WARM_28:    o_so = wdata_q[3]; 
-         WRITE_WARM_29:    o_so = wdata_q[2]; 
-         WRITE_WARM_30:    o_so = wdata_q[1]; 
-         WRITE_WARM_31:    o_so = wdata_q[0];
+         READ_WARM_7:     o_so = 1'b1; 
+         READ_WARM_8,     
+         READ_WARM_9,     
+         READ_WARM_10,    
+         READ_WARM_11,    
+         READ_WARM_12,    
+         READ_WARM_13,    
+         READ_WARM_14,    
+         READ_WARM_15,    
+         READ_WARM_16,    
+         READ_WARM_17,    
+         READ_WARM_18,    
+         READ_WARM_19,    
+         READ_WARM_20,    
+         READ_WARM_21,    
+         READ_WARM_22,    
+         READ_WARM_23:    o_so = i_addr[READ_WARM_8 - sm_q + 15]; 
+         WRITE_WARM_8,
+         WRITE_WARM_9,
+         WRITE_WARM_10,
+         WRITE_WARM_11,
+         WRITE_WARM_12,
+         WRITE_WARM_13,
+         WRITE_WARM_14,
+         WRITE_WARM_15,
+         WRITE_WARM_16,
+         WRITE_WARM_17,
+         WRITE_WARM_18,
+         WRITE_WARM_19,
+         WRITE_WARM_20,
+         WRITE_WARM_21,
+         WRITE_WARM_22,
+         WRITE_WARM_23:    o_so = i_addr[WRITE_WARM_8 - sm_q + 15];
+         WRITE_WARM_24, 
+         WRITE_WARM_25, 
+         WRITE_WARM_26, 
+         WRITE_WARM_27, 
+         WRITE_WARM_28, 
+         WRITE_WARM_29, 
+         WRITE_WARM_30, 
+         WRITE_WARM_31:    o_so = wdata_q[WRITE_WARM_24 - sm_q + 7];
          default:;
       endcase
    end
