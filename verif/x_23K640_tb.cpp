@@ -173,6 +173,12 @@ class SramModel {
       uint8_t  mem[65536]; 
 
       void advance() {   
+         l.log(Verbosity::DEBUG,"[SRAM] ~~~~~~~~~~");
+         
+         // Pin states
+         l.log(Verbosity::DEBUG,"[SRAM] CS:\t\t\t0x%01X", cs);
+         l.log(Verbosity::DEBUG,"[SRAM] SI:\t\t\t0x%01X", si);
+         
          // CMD Data Shift In 
          switch(state){
             case MemState::IDLE:    
@@ -332,15 +338,31 @@ class SramModel {
             case MemState::WRITE_13:   state = MemState::WRITE_14;   break;
             case MemState::WRITE_14:   state = MemState::WRITE_15;   break;
             case MemState::WRITE_15:   state = MemState::WRITE_16;   break;
-            case MemState::WRITE_16:   state = MemState::WRITE_17;   break;
-            case MemState::WRITE_17:   state = MemState::WRITE_18;   break;
+            case MemState::WRITE_16:   
+                                       l.log(Verbosity::DEBUG,"write 16");
+
+                                       if(cs == 0){
+                                          state = MemState::WRITE_17;   
+                                       }else{
+                                          state = MemState::IDLE;   
+                                       }
+                                       break;
+            case MemState::WRITE_17:   if(cs == 0){
+                                          state = MemState::WRITE_18;   
+                                       }else{
+                                          state = MemState::IDLE;   
+                                       }
+                                       break;
+
+                                       //state = MemState::WRITE_18;   break;
             case MemState::WRITE_18:   state = MemState::WRITE_19;   break;
             case MemState::WRITE_19:   state = MemState::WRITE_20;   break;
             case MemState::WRITE_20:   state = MemState::WRITE_21;   break;
             case MemState::WRITE_21:   state = MemState::WRITE_22;   break;
             case MemState::WRITE_22:   state = MemState::WRITE_23;   break; 
-            case MemState::WRITE_23:   state = MemState::IDLE;
+            case MemState::WRITE_23:   state = MemState::WRITE_16;
                                        mem[addr] = cmd_data;
+                                       addr++;
                                        l.log(Verbosity::DEBUG,"[SRAM] WRITE:\t\tmem[0x%04X] <- 0x%02X", addr, cmd_data);
                                        cmd_data = 0;
                                        break;

@@ -162,9 +162,9 @@ module x_23K640(
             end
          sm_q[WRITE_WARM_31]: 
             begin
-               //if(hop & ~rd_n_wr_q & ~i_rd_n_wr)
-               //   sm_d[WRITE_WARM_23] = 1'b1;
-               //else
+               if(hop & ~rd_n_wr_q & ~i_rd_n_wr)
+                  sm_d[WRITE_WARM_24] = 1'b1;
+               else
                   sm_d[IDLE_WARM] = 1'b1;
             end   
          default: 
@@ -184,7 +184,7 @@ module x_23K640(
    end   
 
    // Latch the addr
-   assign addr_en = sm_q[READ_WARM_24] | sm_q[WRITE_WARM_23];
+   assign addr_en = sm_q[READ_WARM_24] | sm_q[WRITE_WARM_24];
 
    assign addr_d = i_addr;
 
