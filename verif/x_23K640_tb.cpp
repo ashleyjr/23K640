@@ -597,7 +597,6 @@ int main(int argc, char** argv, char** env) {
    m_trace->open("waveform.vcd");
 
    dut->i_rst     = 1;
-   dut->i_advance = 1;
    dut->i_valid   = 0;
    dut->i_rd_n_wr = 0;
    dut->i_addr    = 0;

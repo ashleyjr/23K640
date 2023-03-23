@@ -2,6 +2,8 @@
 
 verilator --trace \
    --cc rtl/x_23K640.sv \
+   --cc rtl/x_23K640_sck.sv \
+   --cc rtl/x_23K640_data.sv \
    --exe verif/x_23K640_tb.cpp 
 
 make -C obj_dir -f Vx_23K640.mk Vx_23K640
