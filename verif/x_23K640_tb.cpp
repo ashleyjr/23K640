@@ -4,61 +4,13 @@
 #include <verilated.h>
 #include <verilated_vcd_c.h>
 #include "Vx_23K640.h"
+#include "include/logger.h"
 #include <stdio.h>
 
 #define CYCLES 100000
 
 vluint64_t sim_time = 0;
 uint64_t cycle;
-
-enum class Verbosity { 
-   ERROR,
-   INFO,
-   DEBUG
-};
-
-class Logger {
-   public: 
-      Logger(char const * filename){  
-         fail = false;
-         f = fopen(filename, "w+");
-      } 
-      ~Logger(){
-         printf("====\n");
-         if(fail){
-            printf("FAIL\n");
-         }else{
-            printf("PASS\n");
-         }
-         printf("====\n");
-         fclose(f);
-      }
-
-      void log(Verbosity v, const char *format, ...){
-         char buffer0[256];
-         char buffer1[512];
-         char const * str;
-         va_list args;
-         va_start(args, format); 
-         vsprintf(buffer0,format,args);
-         switch(v){
-            case Verbosity::ERROR:  str = "ERROR";  break;
-            case Verbosity::INFO:   str = "INFO ";  break;
-            case Verbosity::DEBUG:  str = "DEBUG";  break;
-         }
-         sprintf(buffer1,"%10ld [%s]: %s\n",sim_time,str,buffer0);
-         switch(v){
-            case Verbosity::ERROR:  fail = true;
-            case Verbosity::INFO:   printf("%s",buffer1);
-            case Verbosity::DEBUG:  fprintf(f,"%s",buffer1);
-         }
-         va_end(args);
-      } 
-   
-   private:
-      FILE *f; 
-      bool fail;
-};
 
 enum class MemState { 
    IDLE,
@@ -594,7 +546,7 @@ int main(int argc, char** argv, char** env) {
    uint16_t all_reads = std::stoi(argv[4]);
    uint16_t all_writes = std::stoi(argv[5]);
    
-   Logger logger("logfile.txt");
+   Logger logger("logfile.txt", &sim_time);
    AppDriver d(logger, addrs, backpressure, all_reads, all_writes);
    SramModel m(logger); 
 
