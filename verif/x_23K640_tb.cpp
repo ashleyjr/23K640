@@ -11,11 +11,10 @@
 
 #define CYCLES 100000
 
-vluint64_t sim_time = 0;
-uint64_t cycle;
-
-
 int main(int argc, char** argv, char** env) {
+   
+   vluint64_t sim_time = 0;
+   uint64_t cycle;
    Vx_23K640 *dut = new Vx_23K640; 
    Verilated::traceEverOn(true);
    VerilatedVcdC *m_trace = new VerilatedVcdC; 
@@ -45,27 +44,31 @@ int main(int argc, char** argv, char** env) {
       dut->i_clk = 0;
     
       // Test Vectors
-      switch(cycle){
-         
+      switch(cycle){   
          // Reset
          case 10:    dut->i_rst = 0;
                      break;
-         
       }
 
 
-      d.set_accept(dut->o_accept);
-      d.set_rdata(dut->o_rdata);
-      d.set_ready(dut->o_ready);
+      // AppDriver
+      d.set_inputs(
+         dut->o_accept,
+         dut->o_rdata,
+         dut->o_ready
+      );
       d.advance();
       dut->i_valid = d.get_valid();
       dut->i_rd_n_wr = d.get_rd_n_wr();
       dut->i_addr = d.get_addr(); 
       dut->i_wdata = d.get_wdata();
       
-      m.set_cs(dut->o_cs);
-      m.set_si(dut->o_so);      
-      m.set_sck(dut->o_sck);
+      // SRAM Model
+      m.set_inputs(
+         dut->o_cs,
+         dut->o_so,      
+         dut->o_sck
+      );
       dut->i_si = m.get_so(); 
           
       // Tick

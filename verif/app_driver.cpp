@@ -1,10 +1,8 @@
- #include <verilated.h>
-
+#include <verilated.h>
 #include <stdlib.h>
 #include <iostream>
 #include <cstdlib>
 #include <stdio.h>
-
 #include "include/app_driver.h"
 
 AppDriver::AppDriver(Logger & logger, uint16_t n, uint16_t b, uint16_t r, uint16_t w):
@@ -52,13 +50,11 @@ AppDriver::AppDriver(Logger & logger, uint16_t n, uint16_t b, uint16_t r, uint16
 void AppDriver::report_bw(){ 
    float wbits_per_cycle = (float)wbw / (float)cycles;
    float rbits_per_cycle = (float)rbw / (float)cycles;
-
    l.log(Verbosity::INFO,"[App ] Cycles:       %08d", cycles);
    l.log(Verbosity::INFO,"[App ] Bits written: %08d", wbw);
    l.log(Verbosity::INFO,"[App ] Bits read:    %08d", rbw);
    l.log(Verbosity::INFO,"[App ] Write:        %08f bits/cycle", wbits_per_cycle);
    l.log(Verbosity::INFO,"[App ] Read:         %08f bits/cycle", rbits_per_cycle);
-
 }
 
 uint8_t AppDriver::get_valid(){
@@ -77,17 +73,11 @@ uint8_t AppDriver::get_wdata(){
    return wdata;
 }
 
-void AppDriver::set_accept(uint8_t v){
-   accept = v;
+void AppDriver::set_inputs(uint8_t a, uint8_t d, uint8_t r){
+   accept = a;
+   rdata = d;
+   ready = r;
 }
-
-void AppDriver::set_rdata(uint8_t v){
-   rdata = v;
-}
-
-void AppDriver::set_ready(uint8_t v){
-   ready = v;
-} 
 
 void AppDriver::advance() {
    cycles++;
@@ -158,6 +148,7 @@ void AppDriver::request_profile(){
       valid = 0;      
    }
 }
+
 void AppDriver::check_coverage(){
    uint16_t this_cov = 0; 
    for(uint16_t i=0;i<num_addrs;i++){
@@ -169,6 +160,5 @@ void AppDriver::check_coverage(){
       l.log(Verbosity::DEBUG,"[App ] Coverage: %04X/%04X", this_cov, num_addrs);
       coverage = this_cov;
    }
-
 }
 

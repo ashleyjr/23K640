@@ -17,9 +17,7 @@ class AppDriver {
       uint8_t get_rd_n_wr();
       uint16_t get_addr();
       uint8_t get_wdata();
-      void set_accept(uint8_t v);
-      void set_rdata(uint8_t v);
-      void set_ready(uint8_t v);     
+      void set_inputs(uint8_t a, uint8_t d, uint8_t r); 
       void advance() ;
    private:
       Logger   l;

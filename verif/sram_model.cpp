@@ -1,13 +1,10 @@
 #include <verilated.h>
-
 #include <stdlib.h>
 #include <iostream>
 #include <cstdlib>
 #include <stdio.h>
 #include "include/sram_model.h"
 #include <stdarg.h> 
-
-
 
 SramModel::SramModel(Logger & logger):
    l(logger)
@@ -20,19 +17,13 @@ SramModel::SramModel(Logger & logger):
    }
 }
 
-void SramModel::set_sck(int v){
-   if((v == 1) && (sck_last == 0)){
+void SramModel::set_inputs(uint8_t c, uint8_t s, uint8_t ck) {  
+   cs = c;
+   si = s;
+   if((ck == 1) && (sck_last == 0)){
       advance();
    }
-   sck_last = v;
-}
-
-void SramModel::set_cs(int v) {  
-   cs = v;  
-}
-
-void SramModel::set_si(int v) {  
-   si = v;  
+   sck_last = ck;
 }
 
 uint8_t SramModel::get_so() {  

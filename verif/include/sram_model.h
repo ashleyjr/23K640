@@ -73,10 +73,8 @@ enum class MemState {
 
 class SramModel {
    public:
-      SramModel(Logger & logger);
-      void set_sck(int v);
-      void set_cs(int v);
-      void set_si(int v);
+      SramModel(Logger & logger); 
+      void set_inputs(uint8_t c, uint8_t s, uint8_t ck);
       uint8_t get_so();
    private:
       Logger   l;
