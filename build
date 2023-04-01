@@ -6,6 +6,7 @@ verilator --trace \
    --cc rtl/x_23K640_data.sv \
    --cc verif/app_driver.cpp \
    --cc verif/logger.cpp \
+   --cc verif/sram_model.cpp \
    --exe verif/x_23K640_tb.cpp \
    -Iverif/include/
 
