@@ -60,8 +60,6 @@ class Logger {
       bool fail;
 };
 
-Logger l("logfile.txt");
-
 enum class MemState { 
    IDLE,
    CMD_0, 
@@ -133,7 +131,9 @@ enum class MemState {
 class SramModel {
    public:
       
-      SramModel(){  
+      SramModel(Logger & logger):
+         l(logger)
+      {  
          state = MemState::IDLE;
          cmd_data = 0;
          so = 0;
@@ -162,6 +162,7 @@ class SramModel {
       }
 
    private:
+      Logger   l;
       bool     debug;
       MemState state;
       uint8_t  cs;
@@ -393,7 +394,9 @@ enum class DriverState {
 class AppDriver {
    public:
       
-      AppDriver(uint16_t n, uint16_t b, uint16_t r, uint16_t w){ 
+      AppDriver(Logger & logger, uint16_t n, uint16_t b, uint16_t r, uint16_t w):
+         l(logger)
+      { 
          state = DriverState::IDLE;
          valid = 0;
          rd_n_wr = 0;
@@ -520,6 +523,7 @@ class AppDriver {
       }
 
    private:
+      Logger   l;
       uint8_t valid;
       uint8_t rd_n_wr;
       uint16_t addr;
@@ -590,8 +594,9 @@ int main(int argc, char** argv, char** env) {
    uint16_t all_reads = std::stoi(argv[4]);
    uint16_t all_writes = std::stoi(argv[5]);
    
-   AppDriver d(addrs, backpressure, all_reads, all_writes);
-   SramModel m; 
+   Logger logger("logfile.txt");
+   AppDriver d(logger, addrs, backpressure, all_reads, all_writes);
+   SramModel m(logger); 
 
    dut->trace(m_trace, 5);
    m_trace->open("waveform.vcd");

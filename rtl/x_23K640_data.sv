@@ -108,6 +108,11 @@ module x_23K640_data(
    sm_t           sm_d;
    sm_t           sm_q;
 
+   logic          rd;
+   logic          wr;
+   sm_t           sm_ptr;
+   logic [3:0]    ptr;
+
    logic          rdata_en;
    logic [7:0]    rdata_d;
    logic [7:0]    rdata_q;
@@ -220,6 +225,17 @@ module x_23K640_data(
    assign o_cs = (sm_q == IDLE_COLD) | (sm_q == IDLE_WARM);
    
    // SPI Output: Serial Out
+   
+   assign rd = (READ_WARM_8 <= sm_q) & (sm_q <= READ_WARM_23);  
+  
+   assign wr = (WRITE_WARM_8 <= sm_q) & (sm_q <= WRITE_WARM_23);  
+  
+   assign sm_ptr = (rd) ? (READ_WARM_8 - sm_q + 15):
+                   (wr) ? (WRITE_WARM_8 - sm_q + 15):
+                          (WRITE_WARM_24 - sm_q + 7);
+
+   assign ptr = sm_ptr[3:0];
+               
    always_comb begin
       o_so = 1'b0;
       case(sm_q)
@@ -244,7 +260,7 @@ module x_23K640_data(
          READ_WARM_20,    
          READ_WARM_21,    
          READ_WARM_22,    
-         READ_WARM_23:    o_so = i_addr[READ_WARM_8 - sm_q + 15]; 
+         READ_WARM_23,
          WRITE_WARM_8,
          WRITE_WARM_9,
          WRITE_WARM_10,
@@ -260,7 +276,7 @@ module x_23K640_data(
          WRITE_WARM_20,
          WRITE_WARM_21,
          WRITE_WARM_22,
-         WRITE_WARM_23:    o_so = i_addr[WRITE_WARM_8 - sm_q + 15];
+         WRITE_WARM_23:    o_so = i_addr[ptr];
          WRITE_WARM_24, 
          WRITE_WARM_25, 
          WRITE_WARM_26, 
