@@ -3,6 +3,8 @@
 
 #include "logger.h"
 
+#define APP_DRV_SIZE 65536 
+
 enum class DriverState { 
    IDLE,
    WR,
@@ -11,7 +13,7 @@ enum class DriverState {
  
 class AppDriver {
    public:
-      AppDriver(Logger & logger, uint16_t n, uint16_t b, uint16_t r, uint16_t w); 
+      AppDriver(Logger & logger, uint8_t p); 
       void report_bw();
       uint8_t get_valid();
       uint8_t get_rd_n_wr();
@@ -25,13 +27,13 @@ class AppDriver {
       uint8_t rd_n_wr;
       uint16_t addr;
       uint16_t num_addrs;
-      uint16_t addrs[65536];
-      bool cov[65536];
+      uint16_t addrs[APP_DRV_SIZE];
+      bool cov[APP_DRV_SIZE];
       uint16_t coverage;
       uint8_t wdata;
       uint8_t rdata;
       uint8_t ready;
-      uint8_t mem[65536];
+      uint8_t mem[APP_DRV_SIZE];
       uint8_t accept;
       uint8_t check;
       DriverState state;
@@ -41,10 +43,13 @@ class AppDriver {
       uint16_t backpressure;
       uint16_t all_reads;
       uint16_t all_writes;
-      uint16_t check_addr;
-      
+      uint16_t check_addr; 
+      uint8_t profile_sel;
       void request_profile();      
       void check_coverage();
+      void profile_wr_all_then_read_all();
+   
+
 };
 #endif
 

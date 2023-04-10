@@ -13,7 +13,7 @@ SramModel::SramModel(Logger & logger):
    cmd_data = 0;
    so = 0;
    for(int i=0;i<65536;i++){
-      mem[i] = 0xAA;   
+      mem[i] = 0x00;   
    }
 }
 

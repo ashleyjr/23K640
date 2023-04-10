@@ -19,13 +19,10 @@ int main(int argc, char** argv, char** env) {
    Verilated::traceEverOn(true);
    VerilatedVcdC *m_trace = new VerilatedVcdC; 
    uint32_t stop = std::stoi(argv[1]);
-   uint16_t addrs = std::stoi(argv[2]);
-   uint16_t backpressure = std::stoi(argv[3]);
-   uint16_t all_reads = std::stoi(argv[4]);
-   uint16_t all_writes = std::stoi(argv[5]);
+   uint8_t profile_sel = std::stoi(argv[2]);
    
    Logger logger("logfile.txt", &sim_time);
-   AppDriver d(logger, addrs, backpressure, all_reads, all_writes);
+   AppDriver d(logger, profile_sel);
    SramModel m(logger); 
 
    dut->trace(m_trace, 5);

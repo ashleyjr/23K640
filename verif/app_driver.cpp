@@ -5,10 +5,11 @@
 #include <stdio.h>
 #include "include/app_driver.h"
 
-AppDriver::AppDriver(Logger & logger, uint16_t n, uint16_t b, uint16_t r, uint16_t w):
+AppDriver::AppDriver(Logger & logger, uint8_t p):
    l(logger)
 { 
    state = DriverState::IDLE;
+   profile_sel = p;
    valid = 0;
    rd_n_wr = 0;
    addr = 0;
@@ -20,20 +21,11 @@ AppDriver::AppDriver(Logger & logger, uint16_t n, uint16_t b, uint16_t r, uint16
    cycles = 0;
    wbw = 0;
    rbw = 0;
-   backpressure = b;
-   all_reads = r;
-   all_writes = w;
-   // Set number of addresses 
-   if(n < 1){
-      num_addrs = 1;
-   }else{
-      num_addrs = n;
-   }
-   for(int i=0;i<65536;i++){
-      mem[i] = 0xAA;   
+   for(int i=0;i<APP_DRV_SIZE;i++){
+      mem[i] = 0x00;   
    }
    // Initialise coverage
-   for(int i=0;i<65536;i++){
+   for(int i=0;i<APP_DRV_SIZE;i++){
       cov[i] = false;;   
    }
    // Always take top and bottom
@@ -126,27 +118,7 @@ void AppDriver::advance() {
 }
 
 void AppDriver::request_profile(){
-   uint16_t index;
-   if(0 == (std::rand() % backpressure)){  
-      index = std::rand() % num_addrs;
-      addr = addrs[index];
-      cov[index] = true; 
-      wdata = std::rand();
-      valid = 1; 
-      if(0 == (std::rand() % 2)){
-         rd_n_wr = 1;
-      } else {
-         rd_n_wr = 0;
-      }
-      if(1 == all_reads){
-         rd_n_wr = 1; 
-      }
-      if(1 == all_writes){
-         rd_n_wr = 0; 
-      }
-   }else{
-      valid = 0;      
-   }
+   profile_wr_all_then_read_all(); 
 }
 
 void AppDriver::check_coverage(){
@@ -161,4 +133,15 @@ void AppDriver::check_coverage(){
       coverage = this_cov;
    }
 }
+
+void AppDriver::profile_wr_all_then_read_all(){
+   valid = 1;
+   addr++;
+   if(1024 == addr){
+      addr = 0;
+      rd_n_wr = ~rd_n_wr;
+      rd_n_wr &= 0x1;
+   }
+}
+
 
