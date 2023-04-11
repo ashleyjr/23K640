@@ -48,8 +48,9 @@ class AppDriver {
       void request_profile();      
       void check_coverage();
       void profile_wr_all_then_read_all();
-   
-
+      void profile_wr_all_then_read_all_even();
+      void profile_rand_full_rate();
+      void profile_rand_low_rate();
 };
 #endif
 

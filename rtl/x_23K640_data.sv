@@ -185,8 +185,7 @@ module x_23K640_data(
    end   
 
    // Latch the addr
-   assign addr_en = (sm_q == READ_WARM_24) | 
-                    (sm_q == WRITE_WARM_24);
+   assign addr_en = i_valid & o_accept;
 
    assign addr_d = i_addr;
 
@@ -211,7 +210,8 @@ module x_23K640_data(
 
    // App Output: Ready
    assign o_accept = sm_en & ((sm_q == READ_WARM_24)|
-                              (sm_q == WRITE_WARM_23));
+                              (sm_q == WRITE_WARM_23)|
+                             ((sm_q == WRITE_WARM_31) & hop));
 
    always_ff@(posedge i_clk or posedge i_rst) begin
       if(i_rst)         rd_n_wr_q <= 'd0;

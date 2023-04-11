@@ -118,7 +118,16 @@ void AppDriver::advance() {
 }
 
 void AppDriver::request_profile(){
-   profile_wr_all_then_read_all(); 
+   switch(profile_sel){
+      case 0:  profile_wr_all_then_read_all(); 
+               break;
+      case 1:  profile_wr_all_then_read_all_even(); 
+               break;
+      case 2:  profile_rand_full_rate();
+               break;
+      case 3:  profile_rand_low_rate();
+               break;
+   }
 }
 
 void AppDriver::check_coverage(){
@@ -136,12 +145,36 @@ void AppDriver::check_coverage(){
 
 void AppDriver::profile_wr_all_then_read_all(){
    valid = 1;
-   addr++;
-   if(1024 == addr){
+   wdata = std::rand() % 256;  
+   if((APP_DRV_SIZE-1) == addr){
       addr = 0;
       rd_n_wr = ~rd_n_wr;
       rd_n_wr &= 0x1;
    }
+   addr++;
 }
 
+void AppDriver::profile_wr_all_then_read_all_even(){
+   valid = 1;
+   wdata = std::rand() % 256;  
+   if((APP_DRV_SIZE-2) == addr){
+      addr = 0;
+      rd_n_wr = ~rd_n_wr;
+      rd_n_wr &= 0x1;
+   }
+   addr+=2;
+}
 
+void AppDriver::profile_rand_full_rate(){
+   valid = 1;
+   wdata = std::rand() % 256; 
+   addr = std::rand() % APP_DRV_SIZE;
+   rd_n_wr = std::rand() % 2; 
+}
+
+void AppDriver::profile_rand_low_rate(){
+   valid = ((std::rand() % 100) == 0);
+   wdata = std::rand() % 256; 
+   addr = std::rand() % APP_DRV_SIZE;
+   rd_n_wr = std::rand() % 2; 
+}
