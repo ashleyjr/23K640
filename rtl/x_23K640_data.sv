@@ -125,6 +125,7 @@ module x_23K640_data(
    logic [15:0]   addr_d;
    logic [15:0]   addr_q;
 
+   logic          rd_n_wr_d;
    logic          rd_n_wr_q;
    logic          seq;
    logic          hop;
@@ -193,7 +194,16 @@ module x_23K640_data(
       if(i_rst)         addr_q <= 'd0;
       else if(addr_en)  addr_q <= addr_d;
    end 
-   
+
+   // Stash last rd/wr
+   assign rd_n_wr_d = (sm_q == READ_WARM_0) |
+                      (sm_q == READ_WARM_31);
+
+   always_ff@(posedge i_clk or posedge i_rst) begin
+      if(i_rst)         rd_n_wr_q <= 'd0;
+      else if(o_accept) rd_n_wr_q <= rd_n_wr_d;
+   end   
+
    // App Output: Read data
    assign o_rdata = rdata_q;
 
@@ -208,16 +218,14 @@ module x_23K640_data(
       else if(rdata_en) rdata_q <= rdata_d;
    end
 
+
+
    // App Output: Ready
-   assign o_accept = sm_en & ((sm_q == READ_WARM_24)|
-                              (sm_q == WRITE_WARM_23)|
+   assign o_accept = sm_en & ((sm_q == READ_WARM_0)|
+                              (sm_q == WRITE_WARM_0)|
+                             ((sm_q == READ_WARM_31) & hop) |
                              ((sm_q == WRITE_WARM_31) & hop));
-
-   always_ff@(posedge i_clk or posedge i_rst) begin
-      if(i_rst)         rd_n_wr_q <= 'd0;
-      else if(o_accept) rd_n_wr_q <= (sm_q == READ_WARM_24);
-   end   
-
+   
    // App Output: Ready
    assign o_ready = sm_en & (sm_q == READ_WARM_31);
 
@@ -276,7 +284,7 @@ module x_23K640_data(
          WRITE_WARM_20,
          WRITE_WARM_21,
          WRITE_WARM_22,
-         WRITE_WARM_23:    o_so = i_addr[ptr];
+         WRITE_WARM_23:    o_so = addr_q[ptr];
          WRITE_WARM_24, 
          WRITE_WARM_25, 
          WRITE_WARM_26, 

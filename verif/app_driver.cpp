@@ -119,13 +119,15 @@ void AppDriver::advance() {
 
 void AppDriver::request_profile(){
    switch(profile_sel){
-      case 0:  profile_wr_all_then_read_all(); 
+      case 0:  profile_wr_some_then_read_some(); 
                break;
-      case 1:  profile_wr_all_then_read_all_even(); 
+      case 1:  profile_wr_all_then_read_all(); 
                break;
-      case 2:  profile_rand_full_rate();
+      case 2:  profile_wr_all_then_read_all_even(); 
                break;
-      case 3:  profile_rand_low_rate();
+      case 3:  profile_rand_full_rate();
+               break;
+      case 4:  profile_rand_low_rate();
                break;
    }
 }
@@ -142,6 +144,18 @@ void AppDriver::check_coverage(){
       coverage = this_cov;
    }
 }
+
+void AppDriver::profile_wr_some_then_read_some(){
+   valid = 1;
+   wdata = std::rand() % 256;  
+   if(16 == addr){
+      addr = 0;
+      rd_n_wr = ~rd_n_wr;
+      rd_n_wr &= 0x1;
+   }
+   addr++;
+}
+
 
 void AppDriver::profile_wr_all_then_read_all(){
    valid = 1;
