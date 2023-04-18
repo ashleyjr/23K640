@@ -86,18 +86,19 @@ void AppDriver::advance() {
    }
   
    // State transistons
-   switch(state){        
-      case DriverState::IDLE:
-         // Start a transactions 
-         request_profile(); 
-         if(valid == 1){
-            if(rd_n_wr){
-               state = DriverState::RD;
-            } else {
-               state = DriverState::WR;
-            }
+   // - Allow the start of a transaction to complete immmedietly of accept is high
+   if(DriverState::IDLE == state){
+      // Start a transactions 
+      request_profile(); 
+      if(valid == 1){
+         if(rd_n_wr){
+            state = DriverState::RD;
+         } else {
+            state = DriverState::WR;
          }
-         break;
+      }
+   }
+   switch(state){        
       case DriverState::RD:
          if(accept == 1){
             check = mem[addr];
